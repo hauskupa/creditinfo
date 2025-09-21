@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "node build.js",
-    "dev": "npx esbuild src/main.js --bundle --format=iife --target=es2019 --sourcemap --outfile=dist/main.dev.js --watch"
+    "dev": "npx esbuild src/main.js --bundle --format=iife --target=es2019 --sourcemap --outfile=dist/main.dev.js --watch",
+    "deploy": "npm run build && git add . && git commit -m \"Auto deploy $(date +'%Y-%m-%d %H:%M:%S')\" && git push origin main"
   },
   "devDependencies": {
     "esbuild": "^0.25.9"
