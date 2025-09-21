@@ -1,4 +1,3 @@
-<style>
 ::selection{background:var(--brand-red)!important;color:#fff!important}
 img{user-select:none}
 .hidden,.hide{display:none!important}
@@ -11,5 +10,3 @@ body::-webkit-scrollbar{width:6px}
 [data-mainnav-link][data-active=true]{border-bottom:2px solid var(--brand-red)!important}
 [data-subnav]{position:relative;min-height:77px}
 [data-underline]{position:absolute;left:0;top:0;height:2px;width:0;background:var(--brand-red);display:block;pointer-events:none;z-index:9999;transition:left .35s,width .35s}
-.subnavlink-borderbar{display:none}
-</style>
