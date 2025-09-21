@@ -1,10 +1,10 @@
 // build.js
 import { build } from "esbuild";
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
-import { createHash } from "crypto";
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 
 mkdirSync("dist", { recursive: true });
 
+// Step 1: build the bundle
 await build({
   entryPoints: ["src/main.js"],
   bundle: true,
@@ -14,10 +14,18 @@ await build({
   outfile: "dist/main.js"
 });
 
-const code = readFileSync("dist/main.js");
-const hash = createHash("sha1").update(code).digest("hex").slice(0, 8);
-const fileName = `main.${hash}.js`;
-writeFileSync(`dist/${fileName}`, code);
+// Step 2: bump version number
+const versionFile = "dist/version.txt";
+let version = 1;
 
-console.log(`Built: dist/${fileName}`);
-console.log(`Paste into Webflow Footer:\n<script src="https://uploads-ssl.webflow.com/…/${fileName}" defer></script>`);
+if (existsSync(versionFile)) {
+  const current = parseInt(readFileSync(versionFile, "utf8"), 10);
+  if (!isNaN(current)) version = current + 1;
+}
+writeFileSync(versionFile, String(version));
+
+// Step 3: log the script tag
+console.log("Built: dist/main.js");
+console.log(
+  `Use in Webflow:\n<script src="https://cdn.jsdelivr.net/gh/hauskupa/creditinfo@main/dist/main.js?v=${version}" defer></script>`
+);
