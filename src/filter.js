@@ -15,29 +15,34 @@
   const showEl = (el) => el.style.removeProperty("display");
 
   // Read a card's location (prefer attribute)
-const getLocation = (card) => {
-  // 1) Prefer explicit hook
-  const el = card.querySelector("[data-location]");
-  const byAttr = el?.getAttribute("data-location");
-  if (byAttr) return norm(byAttr);
+  const getLocation = (card) => {
+    const el = card.querySelector("[data-location]");
+    const byAttr = el?.getAttribute("data-location");
+    if (byAttr) return norm(byAttr);
+    const byText =
+      el?.textContent ||
+      card.querySelector(".job-card-pre-heading")?.textContent;
+    // FINAL fallback: whole card text (for odd markups)
+    return norm(byText || card.textContent || "");
+  };
 
-  // 2) Fallback to heading element
-  const byText =
-    el?.textContent || card.querySelector(".job-card-pre-heading")?.textContent;
-  if (byText && byText.trim()) return norm(byText);
-
-  // 3) FINAL fallback: use the whole card text (covers markup variances)
-  return norm(card.textContent || "");
-};
-
-
-  // Find cards within scope; fallback globally if needed
+  // Find cards within scope; exclude anything inside the dropdown/menu
   const getCards = (scope) => {
-    let cards = scope.querySelectorAll("[data-card]");
+    const notInDropdown = (el) => !el.closest("[data-filter-dropdown]");
+    let cards = Array.from(scope.querySelectorAll("[data-card]")).filter(
+      notInDropdown
+    );
     if (cards.length) return cards;
-    cards = scope.querySelectorAll("[role='listitem']");
+
+    cards = Array.from(scope.querySelectorAll("[role='listitem']")).filter(
+      notInDropdown
+    );
     if (cards.length) return cards;
-    return document.querySelectorAll("[data-card], [role='listitem']");
+
+    // Global fallback (still exclude dropdown)
+    return Array.from(
+      document.querySelectorAll("[data-card], [role='listitem']")
+    ).filter(notInDropdown);
   };
 
   // Apply filter inside a given scope
@@ -49,7 +54,7 @@ const getLocation = (card) => {
 
     cards.forEach((c) => {
       const loc = getLocation(c);
-      const match = reset || loc === q || loc.includes(q); // ← forgiving match
+      const match = reset || loc === q || loc.includes(q);
       if (match) {
         showEl(c);
         shown++;
@@ -58,14 +63,12 @@ const getLocation = (card) => {
       }
     });
 
-    // Optional empty-state inside scope
     const empty =
       scope.querySelector("[data-filter-empty]") ||
       document.querySelector("[data-filter-empty]");
     if (empty) empty.style.display = shown === 0 ? "" : "none";
 
-    // small debug: show first few normalized card locs
-    const sample = Array.from(cards).slice(0, 5).map((c) => getLocation(c));
+    const sample = cards.slice(0, 5).map((c) => getLocation(c));
     console.log(
       "[filter] value:",
       reset ? "*" : value,
