@@ -1,10 +1,11 @@
 // build.js
 import { build } from "esbuild";
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { mkdirSync, readdirSync, copyFileSync } from "fs";
+import { join } from "path";
 
 mkdirSync("dist", { recursive: true });
 
-// Step 1: build the bundle
+// Step 1: bundle JS
 await build({
   entryPoints: ["src/main.js"],
   bundle: true,
@@ -14,18 +15,16 @@ await build({
   outfile: "dist/main.js"
 });
 
-// Step 2: bump version number
-const versionFile = "dist/version.txt";
-let version = 1;
+// Step 2: copy all CSS from src → dist
+const files = readdirSync("src");
+files.forEach(file => {
+  if (file.endsWith(".css")) {
+    copyFileSync(join("src", file), join("dist", file));
+    console.log(`Copied: ${file}`);
+  }
+});
 
-if (existsSync(versionFile)) {
-  const current = parseInt(readFileSync(versionFile, "utf8"), 10);
-  if (!isNaN(current)) version = current + 1;
-}
-writeFileSync(versionFile, String(version));
-
-// Step 3: log the script tag
-console.log("Built: dist/main.js");
-console.log(
-  `Use in Webflow:\n<script src="https://cdn.jsdelivr.net/gh/hauskupa/creditinfo@main/dist/main.js?v=${version}" defer></script>`
-);
+console.log("Build complete. JS + CSS are in dist/");
+console.log(`Use in Webflow:
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/hauskupa/creditinfo@main/dist/style.css">
+<script src="https://cdn.jsdelivr.net/gh/hauskupa/creditinfo@main/dist/main.js" defer></script>`);
