@@ -26,13 +26,13 @@
     };
 
     const getLocation = (card) => {
-      // Prefer explicit hook
-      const byAttr = card.querySelector("[data-location]")?.textContent;
-      if (byAttr) return byAttr.trim().toLowerCase();
-      // Fallback to your existing heading
-      const byHeading = card.querySelector(".job-card-pre-heading")?.textContent;
-      return (byHeading || "").trim().toLowerCase();
+    const el = card.querySelector("[data-location]");
+    const byAttr = el?.getAttribute("data-location");   // ← prefer attribute
+    if (byAttr) return byAttr.trim().toLowerCase();
+    const byText = el?.textContent || card.querySelector(".job-card-pre-heading")?.textContent;
+    return (byText || "").trim().toLowerCase();
     };
+
 
     const applyFilter = (value) => {
       const reset = !value || value.toLowerCase() === "*";
