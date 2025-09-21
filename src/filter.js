@@ -1,168 +1,101 @@
-// src/filter.js
+
 (() => {
+  // Only run if a filter dropdown exists on this page
+  const dd = document.querySelector("[data-filter-dropdown]");
+  if (!dd) return;
   console.log("[filter] boot");
 
-  // ---------- helpers ----------
-  const norm = (s) =>
-    (s || "")
-      .normalize("NFKD")
-      .replace(/\u00A0/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
+  const norm = (s) => (s || "")
+    .normalize("NFKD").replace(/\u00A0/g," ").replace(/\s+/g," ").trim().toLowerCase();
 
-  const hideEl = (el) => el.style.setProperty("display", "none", "important");
-  const showEl = (el) => el.style.removeProperty("display");
+  const toggle = dd.querySelector("[data-filter-toggle], .w-dropdown-toggle");
+  const menu   = dd.querySelector("[data-filter-menu], .w-dropdown-list");
+  if (!toggle || !menu) { console.warn("[filter] missing toggle/menu"); return; }
 
-  // Read a card's location (attribute → heading → whole card text)
+  // Update dropdown label; keep the chevron icon intact
+  const labelEl = toggle.firstElementChild || toggle;
+  const setLabel = (value, opt) => {
+    const nice = norm(value) === "*" ? "All regions" : (opt?.textContent?.trim() || value);
+    if (labelEl instanceof HTMLInputElement) labelEl.value = nice;
+    else labelEl.textContent = nice;
+  };
+
+  // Find all job-card elements on the page (not inside the dropdown) and return their wrappers
+  const getCards = () => {
+    const notInDropdown = (el) => !el.closest("[data-filter-dropdown]");
+    return [...document.querySelectorAll(".job-card")]
+      .map((card) => card.closest("[data-card], [role='listitem']") || card)
+      .filter(notInDropdown);
+  };
+
+  // Read location from data-location attribute, heading, or full card text
   const getLocation = (card) => {
     const el = card.querySelector("[data-location]") || card.querySelector(".job-card [data-location]");
     const byAttr = el?.getAttribute("data-location");
     if (byAttr) return norm(byAttr);
-
     const byHeading = card.querySelector(".job-card-pre-heading")?.textContent;
     if (byHeading && byHeading.trim()) return norm(byHeading);
-
-    const node = card.matches(".job-card") ? card : (card.querySelector(".job-card") || card);
-    return norm(node?.textContent || "");
+    return norm(card.textContent || "");
   };
 
-  // Cards within a scope; exclude anything inside the dropdown
-  const getCards = (scope) => {
-    const notInDropdown = (el) => !el.closest("[data-filter-dropdown]");
+  const hide = (el) => el.style.setProperty("display","none","important");
+  const show = (el) => el.style.removeProperty("display");
 
-    let cards = Array.from(scope.querySelectorAll("[data-card]")).filter(notInDropdown);
-    if (cards.length) return cards;
-
-    cards = Array.from(scope.querySelectorAll(".job-card"))
-      .map((c) => c.closest("[role='listitem'], [data-card]") || c)
-      .filter(notInDropdown);
-    if (cards.length) return cards;
-
-    cards = Array.from(scope.querySelectorAll("[role='listitem']")).filter(notInDropdown);
-    return cards;
-  };
-
-  // Apply filter inside a given scope
-  const applyFilterInScope = (scope, value) => {
+  const applyFilter = (value) => {
     const q = norm(value);
     const reset = !q || q === "*";
-    const cards = getCards(scope);
+    const cards = getCards();
     let shown = 0;
-
-    cards.forEach((card) => {
-      const loc = getLocation(card);
+    cards.forEach((c) => {
+      const loc = getLocation(c);
       const match = reset || loc === q || loc.includes(q);
-      (match ? showEl : hideEl)(card);
+      (match ? show : hide)(c);
       if (match) shown++;
     });
-
-    const empty =
-      scope.querySelector("[data-filter-empty]") ||
-      document.querySelector("[data-filter-empty]");
-    if (empty) empty.style.display = shown === 0 ? "" : "none";
-
-    const sample = cards.slice(0, 5).map((c) => getLocation(c));
-    console.log(
-      "[filter] value:",
-      reset ? "*" : value,
-      "→",
-      q,
-      "shown:",
-      shown,
-      "/",
-      cards.length,
-      "sample:",
-      sample
-    );
+    console.log("[filter] value:", reset ? "*" : value, "shown:", shown, "/", cards.length);
   };
 
-  // Update dropdown label text (keep chevron/icon). Do nothing if no label.
-  const setDropdownLabel = (dd, value, optionEl) => {
-    const toggle = dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]");
-    const labelEl = toggle?.firstElementChild || toggle || null;
-    if (!labelEl) return; // don't touch the DOM if no proper label
-    const nice =
-      norm(value) === "*"
-        ? "All regions"
-        : optionEl?.textContent?.trim() || value;
-    if (labelEl.tagName === "INPUT") labelEl.value = nice;
-    else labelEl.textContent = nice;
-  };
-
-  // Firm close for Webflow dropdown
-  const closeDropdown = (dd) => {
-    const toggle = dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]");
-    const menu = dd.querySelector("[data-filter-menu]");
+  // Close the dropdown immediately and clean up Webflow classes
+  const closeDropdown = () => {
     dd.classList.remove("w--open");
-    menu?.style?.removeProperty("display");
+    menu.style.removeProperty("display");
     requestAnimationFrame(() => {
       toggle?.click?.();
       setTimeout(() => {
         dd.classList.remove("w--open");
-        menu?.style?.removeProperty("display");
+        menu.style.removeProperty("display");
       }, 20);
     });
   };
 
-  // Track attached dropdowns so we don’t bind twice
-  const attached = new WeakSet();
+  // Handle option clicks within this dropdown
+  dd.addEventListener("click", (e) => {
+    const opt = e.target.closest("[data-filter]");
+    if (!opt || !dd.contains(opt)) return;
+    const value = (opt.getAttribute("data-filter") || "*").trim();
+    dd.dataset.selected = value;
+    setLabel(value, opt);
+    applyFilter(value);
+    closeDropdown();
+  }, true);
 
-  // Attach one dropdown + its scope
-  const attachDropdown = (dd) => {
-    if (attached.has(dd)) return;
-
-    // scope = closest explicit wrapper, else the dropdown’s parent section
-    const scope =
-      dd.closest("[data-filter-scope]") ||
-      dd.closest("section, main, .w-dyn-list, .w-dyn-items, .page-wrapper") ||
-      dd.parentElement;
-
-    // initialise selection
-    const initial = dd.dataset.selected || "*";
-    dd.dataset.selected = initial;
-    setDropdownLabel(dd, initial);
-    applyFilterInScope(scope, initial);
-
-    attached.add(dd);
-  };
-
-  // Init: only attach if dropdowns exist; NEVER attach to <body>
+  // Initialize once items appear (for CMS lists that load after DOMContentLoaded)
+  let tries = 0;
   const init = () => {
-    const dropdowns = document.querySelectorAll("[data-filter-dropdown]");
-    dropdowns.forEach(attachDropdown);
+    const cards = getCards();
+    if (cards.length) {
+      const initial = dd.dataset.selected || "*";
+      dd.dataset.selected = initial;
+      setLabel(initial);
+      applyFilter(initial);
+    } else if (tries++ < 30) {
+      setTimeout(init, 100);
+    }
   };
+  init();
 
-  // Global capturing listener: only react for real dropdown options
-  document.addEventListener(
-    "click",
-    (e) => {
-      const opt = e.target.closest("[data-filter]");
-      if (!opt) return;
-
-      const dd =
-        opt.closest("[data-filter-dropdown]") || opt.closest(".w-dropdown");
-      if (!dd || !attached.has(dd)) return; // only if we actually attached this dropdown
-
-      const scope =
-        dd.closest("[data-filter-scope]") ||
-        dd.closest("section, main, .w-dyn-list, .w-dyn-items, .page-wrapper") ||
-        dd.parentElement;
-
-      const value = (opt.getAttribute("data-filter") || "*").trim();
-      dd.dataset.selected = value;
-
-      setDropdownLabel(dd, value, opt);
-      applyFilterInScope(scope, value);
-      closeDropdown(dd);
-    },
-    true
-  );
-
-  document.addEventListener("DOMContentLoaded", init);
-  new MutationObserver(init).observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-  });
-  setTimeout(init, 50);
+  // Re-apply if CMS adds/removes cards later
+  new MutationObserver(() => {
+    applyFilter(dd.dataset.selected || "*");
+  }).observe(document.documentElement, {childList:true, subtree:true});
 })();
