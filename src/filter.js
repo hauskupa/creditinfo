@@ -15,15 +15,21 @@
   const showEl = (el) => el.style.removeProperty("display");
 
   // Read a card's location (prefer attribute)
-  const getLocation = (card) => {
-    const el = card.querySelector("[data-location]");
-    const byAttr = el?.getAttribute("data-location");
-    if (byAttr) return norm(byAttr);
-    const byText =
-      el?.textContent ||
-      card.querySelector(".job-card-pre-heading")?.textContent;
-    return norm(byText);
-  };
+const getLocation = (card) => {
+  // 1) Prefer explicit hook
+  const el = card.querySelector("[data-location]");
+  const byAttr = el?.getAttribute("data-location");
+  if (byAttr) return norm(byAttr);
+
+  // 2) Fallback to heading element
+  const byText =
+    el?.textContent || card.querySelector(".job-card-pre-heading")?.textContent;
+  if (byText && byText.trim()) return norm(byText);
+
+  // 3) FINAL fallback: use the whole card text (covers markup variances)
+  return norm(card.textContent || "");
+};
+
 
   // Find cards within scope; fallback globally if needed
   const getCards = (scope) => {
