@@ -1,4 +1,5 @@
 (() => {
+  console.log("[filter] boot");
   const norm = (s) =>
     (s || "")
       .normalize("NFKD")
