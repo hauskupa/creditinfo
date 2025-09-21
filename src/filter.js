@@ -14,7 +14,7 @@
   const hideEl = (el) => el.style.setProperty("display", "none", "important");
   const showEl = (el) => el.style.removeProperty("display");
 
-  // Read location from a card
+  // Read a card's location (prefer attribute)
   const getLocation = (card) => {
     const el = card.querySelector("[data-location]");
     const byAttr = el?.getAttribute("data-location");
@@ -25,7 +25,7 @@
     return norm(byText);
   };
 
-  // Find cards for a given scope; if none inside, fall back globally
+  // Find cards within scope; fallback globally if needed
   const getCards = (scope) => {
     let cards = scope.querySelectorAll("[data-card]");
     if (cards.length) return cards;
@@ -43,7 +43,7 @@
 
     cards.forEach((c) => {
       const loc = getLocation(c);
-      const match = reset || loc === q;
+      const match = reset || loc === q || loc.includes(q); // ← forgiving match
       if (match) {
         showEl(c);
         shown++;
@@ -52,23 +52,29 @@
       }
     });
 
-    // Optional empty-state
+    // Optional empty-state inside scope
     const empty =
       scope.querySelector("[data-filter-empty]") ||
       document.querySelector("[data-filter-empty]");
     if (empty) empty.style.display = shown === 0 ? "" : "none";
 
+    // small debug: show first few normalized card locs
+    const sample = Array.from(cards).slice(0, 5).map((c) => getLocation(c));
     console.log(
       "[filter] value:",
       reset ? "*" : value,
+      "→",
+      q,
       "shown:",
       shown,
       "/",
-      cards.length
+      cards.length,
+      "sample:",
+      sample
     );
   };
 
-  // Update visible label in the dropdown (keeps icon)
+  // Update dropdown label text (keep chevron icon)
   const setDropdownLabel = (dd, value, optionEl) => {
     const toggle =
       dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]") || dd;
@@ -97,7 +103,7 @@
     });
   };
 
-  // Initial attach for existing scopes (to run default "*")
+  // Init scopes so "*" shows all on load
   const initScopes = () => {
     const scopes = document.querySelectorAll("[data-filter-scope]");
     if (scopes.length) {
@@ -110,10 +116,10 @@
         scope.dataset.filterAttached = "true";
       });
     } else {
-      // No explicit scope: treat body as scope
       if (!document.body.dataset.filterAttached) {
         const dd =
-          document.body.querySelector("[data-filter-dropdown]") || document.body;
+          document.body.querySelector("[data-filter-dropdown]") ||
+          document.body;
         dd.dataset.selected = dd.dataset.selected || "*";
         setDropdownLabel(dd, dd.dataset.selected);
         applyFilterInScope(document.body, dd.dataset.selected);
@@ -122,19 +128,17 @@
     }
   };
 
-  // GLOBAL, CAPTURING listener — catches clicks even if Webflow stops bubbling
+  // Global capturing listener so Webflow can't swallow the click
   document.addEventListener(
     "click",
     (e) => {
       const opt = e.target.closest("[data-filter]");
       if (!opt) return;
 
-      // Find the dropdown that owns this option
       const dd =
         opt.closest("[data-filter-dropdown]") || opt.closest(".w-dropdown");
       if (!dd) return;
 
-      // Find the scope to filter (nearest wrapper; else body)
       const scope =
         dd.closest("[data-filter-scope]") ||
         opt.closest("[data-filter-scope]") ||
@@ -147,10 +151,9 @@
       applyFilterInScope(scope, value);
       closeDropdown(dd);
     },
-    true // <-- capture phase
+    true
   );
 
-  // Run once on load, and again after CMS mutations
   document.addEventListener("DOMContentLoaded", initScopes);
   new MutationObserver(initScopes).observe(document.documentElement, {
     childList: true,
