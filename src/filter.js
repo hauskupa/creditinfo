@@ -14,35 +14,33 @@
   const hideEl = (el) => el.style.setProperty("display", "none", "important");
   const showEl = (el) => el.style.removeProperty("display");
 
-  // Read a card's location (prefer attribute, fall back to heading/text)
+  // Read a card's location (attribute → heading → whole card text)
   const getLocation = (card) => {
-    const el = card.querySelector("[data-location]");
+    const el = card.querySelector("[data-location]") || card.querySelector(".job-card [data-location]");
     const byAttr = el?.getAttribute("data-location");
     if (byAttr) return norm(byAttr);
-    const byText =
-      el?.textContent ||
-      card.querySelector(".job-card-pre-heading")?.textContent;
-    // FINAL fallback: whole card text (covers odd markups)
-    return norm(byText || card.textContent || "");
+
+    const byHeading = card.querySelector(".job-card-pre-heading")?.textContent;
+    if (byHeading && byHeading.trim()) return norm(byHeading);
+
+    const node = card.matches(".job-card") ? card : (card.querySelector(".job-card") || card);
+    return norm(node?.textContent || "");
   };
 
-  // Find cards within scope; exclude anything inside the dropdown/menu
+  // Cards within a scope; exclude anything inside the dropdown
   const getCards = (scope) => {
     const notInDropdown = (el) => !el.closest("[data-filter-dropdown]");
-    let cards = Array.from(scope.querySelectorAll("[data-card]")).filter(
-      notInDropdown
-    );
+
+    let cards = Array.from(scope.querySelectorAll("[data-card]")).filter(notInDropdown);
     if (cards.length) return cards;
 
-    cards = Array.from(scope.querySelectorAll("[role='listitem']")).filter(
-      notInDropdown
-    );
+    cards = Array.from(scope.querySelectorAll(".job-card"))
+      .map((c) => c.closest("[role='listitem'], [data-card]") || c)
+      .filter(notInDropdown);
     if (cards.length) return cards;
 
-    // Global fallback (still exclude dropdown)
-    return Array.from(
-      document.querySelectorAll("[data-card], [role='listitem']")
-    ).filter(notInDropdown);
+    cards = Array.from(scope.querySelectorAll("[role='listitem']")).filter(notInDropdown);
+    return cards;
   };
 
   // Apply filter inside a given scope
@@ -52,15 +50,11 @@
     const cards = getCards(scope);
     let shown = 0;
 
-    cards.forEach((c) => {
-      const loc = getLocation(c);
-      const match = reset || loc === q || loc.includes(q); // forgiving match
-      if (match) {
-        showEl(c);
-        shown++;
-      } else {
-        hideEl(c);
-      }
+    cards.forEach((card) => {
+      const loc = getLocation(card);
+      const match = reset || loc === q || loc.includes(q);
+      (match ? showEl : hideEl)(card);
+      if (match) shown++;
     });
 
     const empty =
@@ -83,11 +77,11 @@
     );
   };
 
-  // Update dropdown label text (keep chevron/icon)
+  // Update dropdown label text (keep chevron/icon). Do nothing if no label.
   const setDropdownLabel = (dd, value, optionEl) => {
-    const toggle =
-      dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]") || dd;
-    const labelEl = toggle.firstElementChild || toggle;
+    const toggle = dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]");
+    const labelEl = toggle?.firstElementChild || toggle || null;
+    if (!labelEl) return; // don't touch the DOM if no proper label
     const nice =
       norm(value) === "*"
         ? "All regions"
@@ -96,85 +90,79 @@
     else labelEl.textContent = nice;
   };
 
-  // **Firm** close for Webflow dropdown
+  // Firm close for Webflow dropdown
   const closeDropdown = (dd) => {
-    const toggle =
-      dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]") || dd;
+    const toggle = dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]");
     const menu = dd.querySelector("[data-filter-menu]");
-
-    // Force close immediately
     dd.classList.remove("w--open");
     menu?.style?.removeProperty("display");
-
-    // Nudge Webflow’s internal state (ARIA etc.)
-    // Do it next tick so we don't fight their handlers.
     requestAnimationFrame(() => {
       toggle?.click?.();
       setTimeout(() => {
-        // If some style/class stuck around, clear it again
         dd.classList.remove("w--open");
         menu?.style?.removeProperty("display");
       }, 20);
     });
   };
 
-  // Init scopes so "*" shows all on load
-  const initScopes = () => {
-    const scopes = document.querySelectorAll("[data-filter-scope]");
-    if (scopes.length) {
-      scopes.forEach((scope) => {
-        if (scope.dataset.filterAttached) return;
-        const dd = scope.querySelector("[data-filter-dropdown]") || scope;
-        dd.dataset.selected = dd.dataset.selected || "*";
-        setDropdownLabel(dd, dd.dataset.selected);
-        applyFilterInScope(scope, dd.dataset.selected);
-        scope.dataset.filterAttached = "true";
-      });
-    } else {
-      if (!document.body.dataset.filterAttached) {
-        const dd =
-          document.body.querySelector("[data-filter-dropdown]") ||
-          document.body;
-        dd.dataset.selected = dd.dataset.selected || "*";
-        setDropdownLabel(dd, dd.dataset.selected);
-        applyFilterInScope(document.body, dd.dataset.selected);
-        document.body.dataset.filterAttached = "true";
-      }
-    }
+  // Track attached dropdowns so we don’t bind twice
+  const attached = new WeakSet();
+
+  // Attach one dropdown + its scope
+  const attachDropdown = (dd) => {
+    if (attached.has(dd)) return;
+
+    // scope = closest explicit wrapper, else the dropdown’s parent section
+    const scope =
+      dd.closest("[data-filter-scope]") ||
+      dd.closest("section, main, .w-dyn-list, .w-dyn-items, .page-wrapper") ||
+      dd.parentElement;
+
+    // initialise selection
+    const initial = dd.dataset.selected || "*";
+    dd.dataset.selected = initial;
+    setDropdownLabel(dd, initial);
+    applyFilterInScope(scope, initial);
+
+    attached.add(dd);
   };
 
-  // Global capturing listener so Webflow can't swallow the click
+  // Init: only attach if dropdowns exist; NEVER attach to <body>
+  const init = () => {
+    const dropdowns = document.querySelectorAll("[data-filter-dropdown]");
+    dropdowns.forEach(attachDropdown);
+  };
+
+  // Global capturing listener: only react for real dropdown options
   document.addEventListener(
     "click",
     (e) => {
       const opt = e.target.closest("[data-filter]");
       if (!opt) return;
 
-      // Find the dropdown owning this option
       const dd =
         opt.closest("[data-filter-dropdown]") || opt.closest(".w-dropdown");
-      if (!dd) return;
+      if (!dd || !attached.has(dd)) return; // only if we actually attached this dropdown
 
-      // Nearest scope; fallback to body
       const scope =
         dd.closest("[data-filter-scope]") ||
-        opt.closest("[data-filter-scope]") ||
-        document.body;
+        dd.closest("section, main, .w-dyn-list, .w-dyn-items, .page-wrapper") ||
+        dd.parentElement;
 
       const value = (opt.getAttribute("data-filter") || "*").trim();
       dd.dataset.selected = value;
 
       setDropdownLabel(dd, value, opt);
       applyFilterInScope(scope, value);
-      closeDropdown(dd); // <- firm close
+      closeDropdown(dd);
     },
-    true // capture phase
+    true
   );
 
-  document.addEventListener("DOMContentLoaded", initScopes);
-  new MutationObserver(initScopes).observe(document.documentElement, {
+  document.addEventListener("DOMContentLoaded", init);
+  new MutationObserver(init).observe(document.documentElement, {
     childList: true,
     subtree: true,
   });
-  setTimeout(initScopes, 50);
+  setTimeout(init, 50);
 })();
