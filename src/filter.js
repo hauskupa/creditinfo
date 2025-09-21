@@ -31,29 +31,46 @@
       return document.querySelectorAll("[data-card], [role='listitem']");
     };
 
-    // Read location, preferring the attribute value (CMS-safe)
-    const getLocation = (card) => {
-      const el = card.querySelector("[data-location]");
-      const byAttr = el?.getAttribute("data-location");
-      if (byAttr) return byAttr.trim().toLowerCase();
-      const byText = el?.textContent || card.querySelector(".job-card-pre-heading")?.textContent;
-      return (byText || "").trim().toLowerCase();
-    };
+// normalize both option values and card locations the same way
+const norm = (s) =>
+  (s || "")
+    .normalize("NFKD")               // strip diacritics
+    .replace(/\u00A0/g, " ")         // NBSP → normal space
+    .replace(/\s+/g, " ")            // collapse whitespace
+    .trim()
+    .toLowerCase();
 
-    const applyFilter = (value) => {
-      const reset = !value || value.toLowerCase() === "*";
-      const cards = getCards();
-      let shown = 0;
+const getLocation = (card) => {
+  const el = card.querySelector("[data-location]");
+  const byAttr = el?.getAttribute("data-location");
+  if (byAttr) return norm(byAttr);
+  const byText = el?.textContent || card.querySelector(".job-card-pre-heading")?.textContent;
+  return norm(byText);
+};
 
-      cards.forEach((c) => {
-        const loc = getLocation(c);
-        const match = reset || loc === value.toLowerCase();
-        c.style.display = match ? "" : "none";
-        if (match) shown++;
-      });
+const applyFilter = (value) => {
+  const q = norm(value);
+  const reset = !q || q === "*";
+  const cards = getCards();
+  let shown = 0;
 
-      console.log("[filter] value:", value, "shown:", shown, "/", cards.length);
-    };
+  cards.forEach((c) => {
+    const loc = getLocation(c);
+    const match = reset || loc === q;
+    c.style.display = match ? "" : "none";
+    if (match) shown++;
+  });
+
+  // tiny debug: show first few comparisons
+  if (!reset) {
+    const sample = Array.from(cards)
+      .slice(0, 5)
+      .map((c) => ({ loc: getLocation(c) }));
+    console.log("[filter] value:", value, "→", q, "shown:", shown, "/", cards.length, "sample:", sample);
+  } else {
+    console.log("[filter] value: * shown:", shown, "/", cards.length);
+  }
+};
 
     // Option clicks (delegated so CMS re-renders don't break it)
     const onClick = (e) => {
