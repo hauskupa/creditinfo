@@ -14,7 +14,7 @@
   const hideEl = (el) => el.style.setProperty("display", "none", "important");
   const showEl = (el) => el.style.removeProperty("display");
 
-  // Read a card's location (prefer attribute)
+  // Read a card's location (prefer attribute, fall back to heading/text)
   const getLocation = (card) => {
     const el = card.querySelector("[data-location]");
     const byAttr = el?.getAttribute("data-location");
@@ -22,7 +22,7 @@
     const byText =
       el?.textContent ||
       card.querySelector(".job-card-pre-heading")?.textContent;
-    // FINAL fallback: whole card text (for odd markups)
+    // FINAL fallback: whole card text (covers odd markups)
     return norm(byText || card.textContent || "");
   };
 
@@ -54,7 +54,7 @@
 
     cards.forEach((c) => {
       const loc = getLocation(c);
-      const match = reset || loc === q || loc.includes(q);
+      const match = reset || loc === q || loc.includes(q); // forgiving match
       if (match) {
         showEl(c);
         shown++;
@@ -83,7 +83,7 @@
     );
   };
 
-  // Update dropdown label text (keep chevron icon)
+  // Update dropdown label text (keep chevron/icon)
   const setDropdownLabel = (dd, value, optionEl) => {
     const toggle =
       dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]") || dd;
@@ -96,18 +96,24 @@
     else labelEl.textContent = nice;
   };
 
-  // Close Webflow dropdown politely
+  // **Firm** close for Webflow dropdown
   const closeDropdown = (dd) => {
     const toggle =
       dd.querySelector(".w-dropdown-toggle,[data-filter-toggle]") || dd;
     const menu = dd.querySelector("[data-filter-menu]");
+
+    // Force close immediately
+    dd.classList.remove("w--open");
+    menu?.style?.removeProperty("display");
+
+    // Nudge Webflow’s internal state (ARIA etc.)
+    // Do it next tick so we don't fight their handlers.
     requestAnimationFrame(() => {
-      if (dd.classList.contains("w--open")) toggle?.click();
+      toggle?.click?.();
       setTimeout(() => {
-        if (dd.classList.contains("w--open")) {
-          dd.classList.remove("w--open");
-          menu?.style?.removeProperty("display");
-        }
+        // If some style/class stuck around, clear it again
+        dd.classList.remove("w--open");
+        menu?.style?.removeProperty("display");
       }, 20);
     });
   };
@@ -144,10 +150,12 @@
       const opt = e.target.closest("[data-filter]");
       if (!opt) return;
 
+      // Find the dropdown owning this option
       const dd =
         opt.closest("[data-filter-dropdown]") || opt.closest(".w-dropdown");
       if (!dd) return;
 
+      // Nearest scope; fallback to body
       const scope =
         dd.closest("[data-filter-scope]") ||
         opt.closest("[data-filter-scope]") ||
@@ -158,9 +166,9 @@
 
       setDropdownLabel(dd, value, opt);
       applyFilterInScope(scope, value);
-      closeDropdown(dd);
+      closeDropdown(dd); // <- firm close
     },
-    true
+    true // capture phase
   );
 
   document.addEventListener("DOMContentLoaded", initScopes);
