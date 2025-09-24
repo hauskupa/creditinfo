@@ -1,3 +1,4 @@
+console.log("test-2025-09-24 from src/main.js");
 import initSubnav from "./subnav.js";
 import initTopnav from "./topnav.js";
 import { initSolutionCards } from "./solution-cards.js";
