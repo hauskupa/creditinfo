@@ -10,4 +10,5 @@ body::-webkit-scrollbar{width:6px}
 [data-subnav]{position:relative;min-height:77px}
 [data-underline]{position:absolute;left:0;top:0;height:2px;width:0;background:var(--brand-red);display:block;pointer-events:none;z-index:9999;transition:left .35s,width .35s}
 .card-text-clip {overflow: hidden; max-height: 0;transition: max-height 1000ms ease-in-out;}
+.solution-card{height:auto;overflow:visible;}
 .solution-card.is-active {opacity: 1;}
