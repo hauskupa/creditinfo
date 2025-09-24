@@ -9,8 +9,57 @@ const norm = (s) =>
     .trim()
     .toLowerCase();
 
-const hide = (el) => el.style.setProperty("display", "none", "important");
-const show = (el) => el.style.removeProperty("display");
+// animated hide/show helpers (smooth fade + height collapse)
+const ANIM_MS = 260;
+
+const hide = (el) => {
+  // cancel any running animation
+  if (el.__filterAnim) { clearTimeout(el.__filterAnim); el.__filterAnim = null; }
+  // ensure element is visible before collapsing so scrollHeight is correct
+  el.style.removeProperty("display");
+  const startH = el.scrollHeight || 0;
+  el.style.overflow = "hidden";
+  el.style.maxHeight = startH + "px";
+  el.style.opacity = "1";
+  el.style.transition = `opacity ${ANIM_MS - 60}ms ease, max-height ${ANIM_MS}ms ease`;
+  // trigger collapse on next frame
+  requestAnimationFrame(() => {
+    el.style.maxHeight = "0px";
+    el.style.opacity = "0";
+  });
+  el.__filterAnim = setTimeout(() => {
+    el.style.setProperty("display", "none", "important");
+    el.style.removeProperty("max-height");
+    el.style.removeProperty("opacity");
+    el.style.removeProperty("overflow");
+    el.style.removeProperty("transition");
+    el.__filterAnim = null;
+  }, ANIM_MS);
+};
+
+const show = (el) => {
+  if (el.__filterAnim) { clearTimeout(el.__filterAnim); el.__filterAnim = null; }
+  // remove display:none (including important) so element can measure
+  el.style.removeProperty("display");
+  // if computed display still none (rare), make block temporarily
+  if (getComputedStyle(el).display === "none") el.style.display = "block";
+  const targetH = el.scrollHeight || 0;
+  el.style.overflow = "hidden";
+  el.style.maxHeight = "0px";
+  el.style.opacity = "0";
+  el.style.transition = `opacity ${ANIM_MS - 60}ms ease, max-height ${ANIM_MS}ms ease`;
+  // expand on next frame
+  requestAnimationFrame(() => {
+    el.style.maxHeight = targetH + "px";
+    el.style.opacity = "1";
+  });
+  el.__filterAnim = setTimeout(() => {
+    el.style.removeProperty("max-height");
+    el.style.removeProperty("overflow");
+    el.style.removeProperty("transition");
+    el.__filterAnim = null;
+  }, ANIM_MS);
+};
 
 function getCards(scope) {
   return [...scope.querySelectorAll("[data-card]")];
@@ -124,10 +173,15 @@ export function initFilter(opts = {}) {
 // Optional: programmatic API if you ever need it elsewhere
 export function setFilter(scopeEl, value) {
   if (!scopeEl) return;
-  attachScope(scopeEl);        // idempotent
+  attachScope(scopeEl); // idempotent
   scopeEl.dataset.selected = value;
-  // recompute using the same helpers
-  const btn = scopeEl.querySelector(`[data-filter="${CSS.escape(value)}"]`);
-  if (btn) btn.setAttribute("data-active", "true");
+  // sync button active attributes
+  scopeEl.querySelectorAll("[data-filter]").forEach((btn) => {
+    const btnVal = (btn.getAttribute("data-filter") || "*").trim();
+    const active = btnVal === value;
+    if (active) btn.setAttribute("data-active", "true");
+    else btn.removeAttribute("data-active");
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
+  });
   applyFilter(scopeEl, value);
 }
