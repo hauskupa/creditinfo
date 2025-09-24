@@ -61,6 +61,18 @@
       menu?.style?.removeProperty("display");
     };
 
+    // new: keep filter elements visually and accessibly active (use attribute instead of class)
+    const updateActive = (value) => {
+      const normalized = (value || "*").trim();
+      scope.querySelectorAll("[data-filter]").forEach((btn) => {
+        const btnVal = (btn.getAttribute("data-filter") || "*").trim();
+        const active = btnVal === normalized;
+        if (active) btn.setAttribute("data-active", "true");
+        else btn.removeAttribute("data-active");
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    };
+
     scope.addEventListener("click", (e) => {
       const opt = e.target.closest("[data-filter]");
       if (!opt) return;
@@ -70,14 +82,14 @@
 
       applyFilter(scope, value);
 
+      // update active visuals for both dropdown and non-dropdown cases
+      updateActive(value);
+
       if (dd) {
         setLabel(value, opt);
         closeDropdown();
       } else {
-        // highlight active button
-        scope.querySelectorAll("[data-filter]").forEach((btn) =>
-          btn.classList.toggle("is-active", btn === opt)
-        );
+        // previous behavior replaced by updateActive
       }
     });
 
@@ -86,6 +98,8 @@
     scope.dataset.selected = initial;
     applyFilter(scope, initial);
     if (dd) setLabel(initial);
+    // ensure initial active visuals
+    updateActive(initial);
   }
 
   function initAllScopes() {
