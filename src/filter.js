@@ -91,8 +91,13 @@ function applyFilter(scope, value) {
 }
 
 function attachScope(scope) {
-  if (scope.dataset.filterAttached) return;
-  scope.dataset.filterAttached = "true";
+  // prefer an internal JS marker so exported HTML (CMS / exported files) won't block initialization
+  if (scope.__filterAttached) return;
+  scope.__filterAttached = true;
+  // remove any accidental pre-set attribute left in markup to keep markup clean
+  if (scope.hasAttribute && scope.hasAttribute('data-filter-attached')) {
+    scope.removeAttribute('data-filter-attached');
+  }
 
   const dd = scope.querySelector("[data-filter-dropdown]");
   const toggle = dd?.querySelector("[data-filter-toggle], .w-dropdown-toggle");
