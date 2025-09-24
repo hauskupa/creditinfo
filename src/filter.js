@@ -157,6 +157,46 @@ function attachScope(scope) {
     }
   }, { passive: true });
 
+  // --- new: also bind direct listeners to any [data-filter] items that belong to this dropdown/menu
+  // This covers Webflow behavior that moves the menu out of the original wrapper.
+  const bindMenuItems = () => {
+    if (!dd) return;
+    // collect candidates:
+    const candidates = new Set([
+      ...scope.querySelectorAll("[data-filter]"),
+      ...(menu ? [...menu.querySelectorAll("[data-filter]")] : []),
+      // and any data-filter whose closest dropdown wrapper is the same dd (even if moved)
+      ...[...document.querySelectorAll("[data-filter]")].filter((el) => {
+        const parent = el.closest("[data-filter-dropdown]");
+        return parent && parent.isSameNode(dd);
+      }),
+    ]);
+
+    candidates.forEach((el) => {
+      if (el.__filterBound) return;
+      el.__filterBound = true;
+      // use capture so this runs before other handlers (Webflow might stop propagation)
+      el.addEventListener("click", (ev) => {
+        // prefer the element itself, but fallback to closest
+        const target = ev.target.closest("[data-filter]") || el;
+        if (!target) return;
+        const value = (target.getAttribute("data-filter") || "*").trim();
+        scope.dataset.selected = value;
+        applyFilter(scope, value);
+        updateActive(value);
+        if (dd) {
+          setLabel(value, target);
+          // close reliably
+          closeDropdown();
+        }
+      }, { capture: true, passive: true });
+    });
+  };
+
+  // bind now and also try rebinding after a short delay (covers Webflow move)
+  bindMenuItems();
+  // some Webflow setups move elements after initial load — re-run once
+  setTimeout(bindMenuItems, 300);
   // Initial state
   const initial = scope.dataset.selected || "*";
   scope.dataset.selected = initial;
