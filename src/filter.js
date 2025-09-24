@@ -108,8 +108,25 @@ function attachScope(scope) {
 
   const closeDropdown = () => {
     if (!dd) return;
+    // remove open class and ensure menu is hidden
     dd.classList.remove("w--open");
     menu?.style?.removeProperty("display");
+
+    // if there's a toggle, make sure its aria state and focus are cleared
+    if (toggle) {
+      try {
+        toggle.setAttribute("aria-expanded", "false");
+      } catch (e) { /* ignore if not an element with attributes */ }
+      if (toggle instanceof HTMLElement) toggle.blur();
+
+      // Some dropdown implementations (e.g. Webflow) keep internal state.
+      // If the wrapper still reports open on next frame, trigger a toggle click to force-close.
+      requestAnimationFrame(() => {
+        if (dd.classList.contains("w--open")) {
+          try { toggle.click(); } catch (e) { /* best-effort */ }
+        }
+      });
+    }
   };
 
   const updateActive = (value) => {
