@@ -1,5 +1,7 @@
 // Top nav active state using data-section prefix
 export default function initTopnav(){
+  console.debug('[topnav] initTopnav'); // debug marker — ensures file ran
+
   const norm = s => String(s||"").toLowerCase().replace(/\/+$/,"");
   const path = norm(location.pathname);
 
@@ -19,7 +21,7 @@ export default function initTopnav(){
 
   // --- added: scroll lock when any [data-scroll-toggle] is opened
   const body = document.body;
-  const toggles = [...document.querySelectorAll('[data-scroll-toggle]')];
+  const toggles = [...document.querySelectorAll('[data-scroll-toggle], .nav_button, .w-dropdown-toggle')];
   if (toggles.length) {
     let lockCount = 0;
     let savedScrollY = 0;
@@ -34,10 +36,12 @@ export default function initTopnav(){
         body.style.top = `-${savedScrollY}px`;
       }
       lockCount++;
+      console.debug('[topnav] lockScroll', lockCount);
     };
 
     const unlockScroll = () => {
       lockCount = Math.max(0, lockCount - 1);
+      console.debug('[topnav] unlockScroll', lockCount);
       if (lockCount === 0) {
         body.setAttribute('data-scroll', 'true');
         body.style.removeProperty('position');
@@ -50,7 +54,7 @@ export default function initTopnav(){
     };
 
     const handleState = (el) => {
-      const expanded = el.getAttribute('aria-expanded') === 'true';
+      const expanded = (el && el.getAttribute && el.getAttribute('aria-expanded')) === 'true';
       if (expanded) lockScroll(); else unlockScroll();
     };
 
@@ -64,17 +68,23 @@ export default function initTopnav(){
     });
 
     toggles.forEach((el) => {
-      // attach observer
-      mo.observe(el, { attributes: true });
-      // ensure click toggles aria-expanded if the element itself doesn't manage it
-      el.addEventListener('click', (e) => {
-        // if aria-expanded is present, let the observed change drive lock/unlock
-        if (el.hasAttribute('aria-expanded')) return;
-        // toggle attribute manually
-        const is = el.getAttribute('data-scroll-open') === 'true';
-        el.setAttribute('data-scroll-open', is ? 'false' : 'true');
-        if (is) unlockScroll(); else lockScroll();
+      try { mo.observe(el, { attributes: true }); } catch (e) { /* noop */ }
+
+      // fallback: after a click, Webflow may update aria-expanded; check shortly after click
+      el.addEventListener('click', () => {
+        setTimeout(() => {
+          // prefer aria-expanded if present; otherwise toggled data-scroll-open fallback
+          if (el.hasAttribute('aria-expanded')) {
+            handleState(el);
+          } else {
+            // fallback toggle behavior
+            const isOpen = el.getAttribute('data-scroll-open') === 'true';
+            el.setAttribute('data-scroll-open', isOpen ? 'false' : 'true');
+            if (isOpen) unlockScroll(); else lockScroll();
+          }
+        }, 40); // delay allows Webflow handlers to run first
       }, { passive: true });
+
       // initial state check
       if (el.getAttribute('aria-expanded') === 'true') handleState(el);
       if (el.getAttribute('data-scroll-open') === 'true') lockScroll();
