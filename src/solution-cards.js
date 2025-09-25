@@ -34,8 +34,14 @@ export function initSolutionCards() {
 
   if (mode === 'scroll') {
     console.log('[solutions] scroll mode');
-    const sections = [...document.querySelectorAll('[data-solutions-content]')];
-    if (!sections.length) return console.log('[solutions] no sections');
+    let sections = [...wrapper.querySelectorAll('[data-solutions-content]')];
+    console.debug('[solutions] local sections found:', sections.length);
+    // fallback to global search if markup was moved by Webflow or placed elsewhere
+    if (!sections.length) {
+      console.debug('[solutions] falling back to document-level selector');
+      sections = [...document.querySelectorAll('[data-solutions-content]')];
+    }
+    if (!sections.length) return console.log('[solutions] no sections found');
 
     const io = new IntersectionObserver(entries => {
       const visible = entries.filter(e => e.isIntersecting)
@@ -55,7 +61,7 @@ export function initSolutionCards() {
     (function next(){
       openCard(cards[i]);
       i = (i + 1) % cards.length;
-      setTimeout(next, 4000);
+      setTimeout(next, 5000);
     })();
   } else {
     console.log('[solutions] unknown mode:', mode);

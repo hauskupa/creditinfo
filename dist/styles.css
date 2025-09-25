@@ -14,22 +14,15 @@ body::-webkit-scrollbar{width:6px}
 .card-text-clip {overflow: hidden; max-height: 0;transition: max-height 1000ms ease-in-out;}
 .solution-card{height:auto;overflow:visible;}
 .solution-card.is-active {opacity: 1;}
+.card-text-clip { overflow: hidden; max-height: 0; transition: max-height 800ms ease-in-out;}
+.solution-card.is-active {filter: none;transform: translateY(0);}
+
 
 /* hooks */
 [data-team="wrap"] { position: relative; }
-[data-team="grid"] {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 2rem;                 /* <-- pick your gap */
-  /* grid-auto-flow: row; */ /* not required, safe to omit */
-}
-@media (max-width: 991px){
-  [data-team="grid"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 767px){
-  [data-team="grid"] { grid-template-columns: 1fr; }
-}
-
+[data-team="grid"] {display: grid;grid-template-columns: repeat(4, minmax(0, 1fr));gap: 2rem;}
+@media (max-width: 991px){[data-team="grid"] { grid-template-columns: repeat(2, minmax(0, 1fr));}}
+@media (max-width: 767px){[data-team="grid"] { grid-template-columns: 1fr; }}
 /* in-card bio stays hidden; we copy its HTML into the floating panel */
 .team-card .bio { display: none; }
 
