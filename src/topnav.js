@@ -53,41 +53,54 @@ export default function initTopnav(){
       }
     };
 
+    // --- new: helper that inspects all toggles and ensures lockCount matches open state
+    const syncLocksFromToggles = () => {
+      const openCount = toggles.reduce((acc, el) => {
+        const aria = el.getAttribute && el.getAttribute('aria-expanded');
+        const fallback = el.getAttribute && el.getAttribute('data-scroll-open');
+        return acc + ((aria === 'true' || fallback === 'true') ? 1 : 0);
+      }, 0);
+
+      // if there are more open toggles than locks, lock more
+      while (lockCount < openCount) lockScroll();
+      // if there are fewer open toggles than locks, unlock until balanced
+      while (lockCount > openCount) unlockScroll();
+    };
+
     const handleState = (el) => {
       const expanded = (el && el.getAttribute && el.getAttribute('aria-expanded')) === 'true';
       if (expanded) lockScroll(); else unlockScroll();
     };
 
-    // Observe aria-expanded on each toggle (works if Webflow or other code toggles it)
     const mo = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        if (m.attributeName === 'aria-expanded' && m.target) {
-          handleState(m.target);
-        }
-      }
+      // run a simple sync after mutations (fast)
+      syncLocksFromToggles();
     });
 
     toggles.forEach((el) => {
       try { mo.observe(el, { attributes: true }); } catch (e) { /* noop */ }
 
-      // fallback: after a click, Webflow may update aria-expanded; check shortly after click
       el.addEventListener('click', () => {
-        setTimeout(() => {
-          // prefer aria-expanded if present; otherwise toggled data-scroll-open fallback
-          if (el.hasAttribute('aria-expanded')) {
-            handleState(el);
-          } else {
-            // fallback toggle behavior
-            const isOpen = el.getAttribute('data-scroll-open') === 'true';
-            el.setAttribute('data-scroll-open', isOpen ? 'false' : 'true');
-            if (isOpen) unlockScroll(); else lockScroll();
-          }
-        }, 40); // delay allows Webflow handlers to run first
+        // short delay so Webflow or other handlers can update aria-expanded first
+        setTimeout(syncLocksFromToggles, 40);
       }, { passive: true });
-
-      // initial state check
-      if (el.getAttribute('aria-expanded') === 'true') handleState(el);
-      if (el.getAttribute('data-scroll-open') === 'true') lockScroll();
     });
+
+    // fallback: if something else closes overlays (click outside etc.), ensure we sync
+    document.addEventListener('click', () => setTimeout(syncLocksFromToggles, 60), { passive: true });
+
+    // ESC should close overlays and clear locks
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        toggles.forEach((el) => {
+          if (el.hasAttribute && el.hasAttribute('aria-expanded')) el.setAttribute('aria-expanded', 'false');
+          if (el.hasAttribute && el.hasAttribute('data-scroll-open')) el.setAttribute('data-scroll-open', 'false');
+        });
+        // clear all locks immediately
+        while (lockCount > 0) unlockScroll();
+      }
+    });
+    // initial sync
+    syncLocksFromToggles();
   }
 }
