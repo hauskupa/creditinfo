@@ -75,3 +75,49 @@ body::-webkit-scrollbar{width:6px}
 @media (max-width: 767px){
   .bio-panel{ position: static; width: auto; max-height: none; margin-top: 16px; }
 }
+
+/* frames */
+[data-history-left],
+[data-history-right],
+[data-history-images] { position: relative; overflow: hidden; }
+
+/* belts */
+.slide-track,
+.slide-track2,
+.slide-track--images {display: flex;will-change: transform;transition: transform .6s cubic-bezier(.25,.8,.25,1);}
+.slide-track,
+.slide-track2 { flex-direction: column; }
+.slide-track--images { flex-direction: row-reverse; transition: transform .7s cubic-bezier(.25,.8,.25,1) .08s;}
+
+/* slides */
+.slide-content-1-slide,
+.slide-content-2-slide,
+.slide-img-item { flex: 0 0 auto; }
+
+/* timeline dual-icon toggle */
+[data-timeline-icon="active"] { display: none; }
+[data-timeline-step].is-active [data-timeline-icon="active"] { display: block; }
+[data-timeline-step].is-active [data-timeline-icon="default"] { display: none; }
+[data-timeline-step].is-active [data-timeline-label] {font-weight: 700; background: var(--Gradient-Red, linear-gradient(136deg, #E2080A 26.25%, #8A0002 102.29%));background-clip: text;-webkit-background-clip: text;-webkit-text-fill-color: transparent;}
+
+/* disabled arrows look */
+.history-slider-button[disabled] { border:1px solid var(--gray); color:var(--gray);pointer-events:none; }
+/* timeline becomes a horizontal scroller */
+[data-timeline]{
+  display: flex;                 /* lay steps in a row */
+  align-items: center;
+  justify-content: flex-start;   /* don't space-between; let it be content-width */
+  gap: 24px;                     /* your spacing between steps/lines */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory; /* optional nice feel */
+  padding-bottom: 6px;           /* room for hidden scrollbar if any */
+}
+
+/* optional: hide scrollbar */
+[data-timeline]::-webkit-scrollbar{ display:none; }
+[data-timeline]{ scrollbar-width:none; }
+
+/* each step snaps; your lines can stay as-is */
+[data-timeline-step]{ scroll-snap-align: center; }

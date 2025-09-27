@@ -32,6 +32,40 @@ export function initSolutionCards() {
     });
   }
 
+  // make cards clickable / keyboard accessible and (for autoplay) pause on user interaction
+  let userPaused = false;
+  let pauseTimer = null;
+  const pauseAutoplay = (ms = 8000) => {
+    userPaused = true;
+    clearTimeout(pauseTimer);
+    pauseTimer = setTimeout(() => { userPaused = false; }, ms);
+  };
+
+  cards.forEach(c => {
+    if (c.__solutionsClickable) return;
+    c.__solutionsClickable = true;
+    if (!c.hasAttribute('tabindex')) c.setAttribute('tabindex', '0');
+    if (!c.hasAttribute('role')) c.setAttribute('role', 'button');
+    c.style.cursor = 'pointer';
+
+    c.addEventListener('click', () => {
+      openCard(c);
+      if (mode === 'scroll') {
+        const id = c.getAttribute('data-solutions-card');
+        const section = wrapper.querySelector(`[data-solutions-content="${id}"]`) || document.querySelector(`[data-solutions-content="${id}"]`);
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (mode === 'autoplay') pauseAutoplay();
+    }, { passive: true });
+
+    c.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        c.click();
+      }
+    });
+  });
+
   if (mode === 'scroll') {
     console.log('[solutions] scroll mode');
     let sections = [...wrapper.querySelectorAll('[data-solutions-content]')];
@@ -59,8 +93,11 @@ export function initSolutionCards() {
     console.log('[solutions] autoplay mode');
     let i = 0;
     (function next(){
-      openCard(cards[i]);
-      i = (i + 1) % cards.length;
+      if (!userPaused) {
+        openCard(cards[i]);
+        i = (i + 1) % cards.length;
+      }
+      // keep ticking; when userPaused is true we still poll until it clears
       setTimeout(next, 5000);
     })();
   } else {
