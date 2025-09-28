@@ -89,8 +89,8 @@ export function initSolutionCards() {
     });
   });
 
-  if (mode === 'scroll') {
-    console.log('[solutions] scroll mode');
+  if (mode === 'scroll' || mode === 'svg') {
+    console.log('[solutions] scroll observer enabled for mode:', mode);
     let sections = [...wrapper.querySelectorAll('[data-solutions-content]')];
     console.debug('[solutions] local sections found:', sections.length);
     // fallback to global search if markup was moved by Webflow or placed elsewhere
