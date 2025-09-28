@@ -30,6 +30,17 @@ export function initSolutionCards() {
         ? (clip.firstElementChild?.scrollHeight || 0) + 'px'
         : '0px';
     });
+
+    // SVG handling: animate scale and swap fills for the active card
+    // restore others, animate the newly active one
+    cards.forEach(c => {
+      if (c === card) {
+        setSvgFill(c, 'var(--brand-red)');
+        animateSvgScale(c);
+      } else {
+        setSvgFill(c, null); // restore original
+      }
+    });
   }
 
   // make cards clickable / keyboard accessible and (for autoplay) pause on user interaction
@@ -103,4 +114,71 @@ export function initSolutionCards() {
   } else {
     console.log('[solutions] unknown mode:', mode);
   }
+
+  // --- SVG helpers -------------------------------------------------------
+  // detect inline svg in card
+  const isSvgCard = (card) => !!card.querySelector('svg');
+
+  // Cache original fills for elements inside an svg (first time only)
+  const cacheOriginalFills = (svg) => {
+    if (!svg || svg.__fillsCached) return;
+    const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
+    elems.forEach(el => {
+      // store current explicit fill or computed fill so we can restore later
+      if (el.hasAttribute('fill')) {
+        el.dataset.__origFill = el.getAttribute('fill') || '';
+      } else {
+        try {
+          const comp = getComputedStyle(el).fill || '';
+          el.dataset.__origFill = comp || '';
+        } catch (e) {
+          el.dataset.__origFill = '';
+        }
+      }
+    });
+    svg.__fillsCached = true;
+  };
+
+  // set fill to a CSS value (like 'var(--brand-red)') or null to restore original
+  const setSvgFill = (card, cssFillOrNull) => {
+    const svg = card.querySelector('svg');
+    if (!svg) return;
+    cacheOriginalFills(svg);
+    const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
+    elems.forEach(el => {
+      if (cssFillOrNull) {
+        // apply CSS variable fill; use style so it overrides attributes
+        el.style.fill = cssFillOrNull;
+      } else {
+        // restore original explicit fill if existed, otherwise remove style
+        const orig = el.dataset.__origFill;
+        if (orig != null && orig !== '') {
+          el.style.fill = orig;
+        } else {
+          el.style.removeProperty('fill');
+        }
+      }
+    });
+  };
+
+  // small scale pulse animation for svg (uses WAAPI if available)
+  const animateSvgScale = (card) => {
+    const svg = card.querySelector('svg');
+    if (!svg) return;
+    try {
+      if (svg.animate) {
+        svg.animate([
+          { transform: 'scale(1)', offset: 0 },
+          { transform: 'scale(1.08)', offset: 0.5 },
+          { transform: 'scale(1)', offset: 1 }
+        ], { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' });
+        return;
+      }
+    } catch (e) { /* ignore */ }
+    // fallback quick css transform
+    svg.style.transition = 'transform 220ms ease';
+    svg.style.transform = 'scale(1.08)';
+    setTimeout(() => { svg.style.transform = 'scale(1)'; }, 220);
+  };
+  // -----------------------------------------------------------------------
 }
