@@ -22,10 +22,9 @@ export function initSolutionCards() {
   function openCard(card) {
     cards.forEach(c => {
       const on = c === card;
+      // toggle class only — visual styles handled by CSS
       c.classList.toggle('is-active', on);
-      c.style.opacity = on ? '1' : '0.5';
-      // scale the whole card (parent of svg)
-      c.style.transform = on ? 'scale(1.04)' : 'scale(1)';
+
       const clip = c.querySelector('.card-text-clip');
       if (!clip) return;
       clip.style.maxHeight = on
@@ -66,10 +65,7 @@ export function initSolutionCards() {
     if (!c.hasAttribute('tabindex')) c.setAttribute('tabindex', '0');
     if (!c.hasAttribute('role')) c.setAttribute('role', 'button');
     c.style.cursor = 'pointer';
-    // ensure smooth card scaling
-    c.style.transition = c.style.transition ? c.style.transition + ', transform 260ms ease' : 'transform 260ms ease';
-    c.style.transformOrigin = '50% 50%';
-    c.style.willChange = 'transform';
+    // visual transitions handled by CSS (keep JS minimal)
 
     c.addEventListener('click', () => {
       openCard(c);
