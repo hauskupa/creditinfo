@@ -74,6 +74,8 @@ body::-webkit-scrollbar{width:6px}
 /* mobile: stack below grid */
 @media (max-width: 767px){
   .bio-panel{ position: static; width: auto; max-height: none; margin-top: 16px; }
+  .team-card.is-open .bio{display:flex}
+  .team-card.is-closed .bio{display:none}
 }
 
 /* frames */
