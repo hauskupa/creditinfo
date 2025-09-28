@@ -5,7 +5,7 @@ export function initSolutionCards() {
   const wrapper = document.querySelector('[data-solutions]');
   if (!wrapper) return console.log('[solutions] no wrapper');
 
-  const mode  = wrapper.getAttribute('data-solutions'); // "scroll" | "autoplay"
+  const mode  = wrapper.getAttribute('data-solutions'); // "scroll" | "autoplay" | "svg"
   const cards = [...wrapper.querySelectorAll('[data-solutions-card]')];
   if (!cards.length) return console.log('[solutions] no cards');
 
@@ -187,4 +187,10 @@ export function initSolutionCards() {
     setTimeout(() => { svg.style.transform = 'scale(1)'; }, 220);
   };
   // -----------------------------------------------------------------------
+
+  // If wrapper is in svg mode, ensure an initial card is activated now that helpers exist
+  if (mode === 'svg') {
+    console.log('[solutions] svg mode');
+    openCard(cards[0]);
+  }
 }
