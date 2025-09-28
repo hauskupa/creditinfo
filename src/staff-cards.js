@@ -146,17 +146,25 @@ export function initStaffCards() {
 
       setCardStates(card);
 
-      // Decide mode:
-      // - If NOT last column -> GRID mode (shift layout, bio occupies next cell)
-      // - If last column     -> PANEL mode (float over previous column)
-      if (colIndex < colCount) {
-        // ensure panel is closed
+      // Mobile / single-column: keep the original .bio inside the card (no panel, no move)
+      if (colCount === 1) {
+        // restore any previously moved bio back into its card and close panel
+        if (activeBio && activeCard) {
+          activeBio.style.removeProperty('grid-column');
+          activeBio.style.removeProperty('grid-row');
+          activeCard.appendChild(activeBio);
+          activeBio = null;
+        }
         panel.classList.remove('is-open');
         panel.innerHTML = '';
-
+        mode = 'inline';
+      }
+      // Multi-column: grid or panel as before
+      else if (colIndex < colCount) {
+        panel.classList.remove('is-open');
+        panel.innerHTML = '';
         openAsGrid(card, colIndex, rowIndex);
       } else {
-        // if a previous grid-bio was out, restore it before using panel
         if (activeBio && activeCard) {
           activeBio.style.removeProperty('grid-column');
           activeBio.style.removeProperty('grid-row');
@@ -204,6 +212,20 @@ export function initStaffCards() {
       const idx = indexOfCard(activeCard);
       const colIndex = (idx % colCount) + 1;
       const rowIndex = Math.floor(idx / colCount) + 1;
+
+      // If grid collapsed to one column, force inline mode: restore any moved bio and close panel
+      if (colCount === 1) {
+        if (activeBio && activeCard) {
+          activeBio.style.removeProperty('grid-column');
+          activeBio.style.removeProperty('grid-row');
+          activeCard.appendChild(activeBio);
+          activeBio = null;
+        }
+        panel.classList.remove('is-open');
+        panel.innerHTML = '';
+        mode = 'inline';
+        return;
+      }
 
       if (colIndex < colCount) {
         // should be GRID mode
