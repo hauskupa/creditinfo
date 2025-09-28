@@ -148,22 +148,55 @@ export function initSolutionCards() {
     });
   });
 
-  // hub control: advance step-by-step when center/hub is clicked
+  // hub control: clicking the hub toggles a forward-only "play" mode
+  // optional: set wrapper data-hub-interval="<ms>" to change step interval (default 3500)
   const hub = wrapper.querySelector('[data-solutions-hub]') || wrapper.querySelector('.solution-cards-circle-center');
   if (hub) {
-    hub.addEventListener('click', (e) => {
-      e.preventDefault();
+    let hubPlaying = false;
+    let hubTimer = null;
+    const hubInterval = parseInt(wrapper.dataset.hubInterval, 10) || 3500;
+
+    const hubStep = () => {
       const next = (currentIndex + 1) % cards.length;
       openCard(cards[next]);
-      // animate svg on the newly active card (if present)
       animateSvgScale(cards[next]);
+    };
+
+    const startHub = () => {
+      if (hubPlaying) return;
+      hubPlaying = true;
+      hub.classList.add('is-playing');
+      // immediate first step then schedule repeating forward steps
+      hubStep();
+      hubTimer = setInterval(hubStep, hubInterval);
+    };
+
+    const stopHub = () => {
+      hubPlaying = false;
+      hub.classList.remove('is-playing');
+      if (hubTimer) {
+        clearInterval(hubTimer);
+        hubTimer = null;
+      }
+    };
+
+    hub.addEventListener('click', (e) => {
+      e.preventDefault();
+      // toggle play/stop
+      if (hubPlaying) stopHub(); else startHub();
       if (mode === 'autoplay') pauseAutoplay();
     }, { passive: true });
+
     hub.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         hub.click();
       }
+    });
+
+    // stop hub playback if user interacts directly with any card
+    cards.forEach(c => {
+      c.addEventListener('click', () => { if (hubPlaying) stopHub(); }, { passive: true });
     });
   }
 
