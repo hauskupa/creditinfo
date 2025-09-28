@@ -83,8 +83,8 @@ export function initSolutionCards() {
     });
   });
 
-  if (mode === 'scroll') {
-    console.log('[solutions] scroll mode');
+  if (mode === 'scroll' || mode === 'svg') {
+    console.log('[solutions] scroll observer enabled for mode:', mode);
     let sections = [...wrapper.querySelectorAll('[data-solutions-content]')];
     console.debug('[solutions] local sections found:', sections.length);
     // fallback to global search if markup was moved by Webflow or placed elsewhere
@@ -130,7 +130,6 @@ export function initSolutionCards() {
     if (!svg || svg.__fillsCached) return;
     const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
     elems.forEach(el => {
-      // store current explicit fill or computed fill so we can restore later
       if (el.hasAttribute('fill')) {
         el.dataset.__origFill = el.getAttribute('fill') || '';
       } else {
@@ -153,10 +152,8 @@ export function initSolutionCards() {
     const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
     elems.forEach(el => {
       if (cssFillOrNull) {
-        // apply CSS variable fill; use style so it overrides attributes
         el.style.fill = cssFillOrNull;
       } else {
-        // restore original explicit fill if existed, otherwise remove style
         const orig = el.dataset.__origFill;
         if (orig != null && orig !== '') {
           el.style.fill = orig;
@@ -181,7 +178,6 @@ export function initSolutionCards() {
         return;
       }
     } catch (e) { /* ignore */ }
-    // fallback quick css transform
     svg.style.transition = 'transform 220ms ease';
     svg.style.transform = 'scale(1.08)';
     setTimeout(() => { svg.style.transform = 'scale(1)'; }, 220);
