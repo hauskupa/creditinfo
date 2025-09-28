@@ -24,6 +24,8 @@ export function initSolutionCards() {
       const on = c === card;
       c.classList.toggle('is-active', on);
       c.style.opacity = on ? '1' : '0.5';
+      // scale the whole card (parent of svg)
+      c.style.transform = on ? 'scale(1.04)' : 'scale(1)';
       const clip = c.querySelector('.card-text-clip');
       if (!clip) return;
       clip.style.maxHeight = on
@@ -37,8 +39,8 @@ export function initSolutionCards() {
       const perCardSvg = c.hasAttribute('data-solutions-svg');
       if (svgMode || perCardSvg) {
         if (c === card) {
+          // set svg fill to brand color for active card
           setSvgFill(c, 'var(--brand-red)');
-          animateSvgScale(c);
         } else {
           setSvgFill(c, null); // restore original
         }
@@ -64,6 +66,10 @@ export function initSolutionCards() {
     if (!c.hasAttribute('tabindex')) c.setAttribute('tabindex', '0');
     if (!c.hasAttribute('role')) c.setAttribute('role', 'button');
     c.style.cursor = 'pointer';
+    // ensure smooth card scaling
+    c.style.transition = c.style.transition ? c.style.transition + ', transform 260ms ease' : 'transform 260ms ease';
+    c.style.transformOrigin = '50% 50%';
+    c.style.willChange = 'transform';
 
     c.addEventListener('click', () => {
       openCard(c);
@@ -83,8 +89,8 @@ export function initSolutionCards() {
     });
   });
 
-  if (mode === 'scroll' || mode === 'svg') {
-    console.log('[solutions] scroll observer enabled for mode:', mode);
+  if (mode === 'scroll') {
+    console.log('[solutions] scroll mode');
     let sections = [...wrapper.querySelectorAll('[data-solutions-content]')];
     console.debug('[solutions] local sections found:', sections.length);
     // fallback to global search if markup was moved by Webflow or placed elsewhere
@@ -130,6 +136,7 @@ export function initSolutionCards() {
     if (!svg || svg.__fillsCached) return;
     const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
     elems.forEach(el => {
+      // store current explicit fill or computed fill so we can restore later
       if (el.hasAttribute('fill')) {
         el.dataset.__origFill = el.getAttribute('fill') || '';
       } else {
@@ -149,11 +156,15 @@ export function initSolutionCards() {
     const svg = card.querySelector('svg');
     if (!svg) return;
     cacheOriginalFills(svg);
+    // smooth fill transition on the svg root so fills change nicely
+    svg.style.transition = 'fill 260ms ease, color 260ms ease';
     const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
     elems.forEach(el => {
       if (cssFillOrNull) {
+        // apply CSS variable fill; use style so it overrides attributes
         el.style.fill = cssFillOrNull;
       } else {
+        // restore original explicit fill if existed, otherwise remove style
         const orig = el.dataset.__origFill;
         if (orig != null && orig !== '') {
           el.style.fill = orig;
@@ -172,12 +183,13 @@ export function initSolutionCards() {
       if (svg.animate) {
         svg.animate([
           { transform: 'scale(1)', offset: 0 },
-          { transform: 'scale(1.08)', offset: 0.5 },
+          { transform: 'scale(1.5)', offset: 0.5 },
           { transform: 'scale(1)', offset: 1 }
         ], { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' });
         return;
       }
     } catch (e) { /* ignore */ }
+    // fallback quick css transform
     svg.style.transition = 'transform 220ms ease';
     svg.style.transform = 'scale(1.08)';
     setTimeout(() => { svg.style.transform = 'scale(1)'; }, 220);
