@@ -9,6 +9,66 @@ export function initSolutionCards() {
   const cards = [...wrapper.querySelectorAll('[data-solutions-card]')];
   if (!cards.length) return console.log('[solutions] no cards');
 
+  // keep track of which card is currently active
+  let currentIndex = 0;
+
+  // --- SVG helpers (moved up so openCard can call them safely) ----------
+  // Cache original fills for elements inside an svg (first time only)
+  const cacheOriginalFills = (svg) => {
+    if (!svg || svg.__fillsCached) return;
+    const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
+    elems.forEach(el => {
+      if (el.hasAttribute('fill')) {
+        el.dataset.__origFill = el.getAttribute('fill') || '';
+      } else {
+        try {
+          el.dataset.__origFill = getComputedStyle(el).fill || '';
+        } catch (e) {
+          el.dataset.__origFill = '';
+        }
+      }
+    });
+    svg.__fillsCached = true;
+  };
+
+  // set fill to a CSS value (like 'var(--brand-red)') or null to restore original
+  const setSvgFill = (card, cssFillOrNull) => {
+    const svg = card?.querySelector('svg');
+    if (!svg) return;
+    cacheOriginalFills(svg);
+    svg.style.transition = 'fill 260ms ease, color 260ms ease';
+    const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
+    elems.forEach(el => {
+      if (cssFillOrNull) {
+        el.style.fill = cssFillOrNull;
+      } else {
+        const orig = el.dataset.__origFill;
+        if (orig != null && orig !== '') el.style.fill = orig;
+        else el.style.removeProperty('fill');
+      }
+    });
+  };
+
+  // small svg pulse animation (used by hub step or card activation)
+  const animateSvgScale = (card) => {
+    const svg = card?.querySelector('svg');
+    if (!svg) return;
+    try {
+      if (svg.animate) {
+        svg.animate([
+          { transform: 'scale(1)', offset: 0 },
+          { transform: 'scale(1.08)', offset: 0.5 },
+          { transform: 'scale(1)', offset: 1 }
+        ], { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' });
+        return;
+      }
+    } catch (e) { /* ignore */ }
+    svg.style.transition = 'transform 220ms ease';
+    svg.style.transform = 'scale(1.08)';
+    setTimeout(() => { svg.style.transform = 'scale(1)'; }, 220);
+  };
+  // ---------------------------------------------------------------------
+
   // normalize clips
   cards.forEach(c => {
     const clip = c.querySelector('.card-text-clip');
@@ -24,6 +84,9 @@ export function initSolutionCards() {
       const on = c === card;
       // toggle class only — visual styles handled by CSS
       c.classList.toggle('is-active', on);
+
+      // keep currentIndex in sync
+      if (on) currentIndex = cards.indexOf(card);
 
       const clip = c.querySelector('.card-text-clip');
       if (!clip) return;
@@ -68,12 +131,12 @@ export function initSolutionCards() {
     // visual transitions handled by CSS (keep JS minimal)
 
     c.addEventListener('click', () => {
+      // activate card and also ensure the right content is shown (scroll into view if content exists)
       openCard(c);
-      if (mode === 'scroll') {
-        const id = c.getAttribute('data-solutions-card');
-        const section = wrapper.querySelector(`[data-solutions-content="${id}"]`) || document.querySelector(`[data-solutions-content="${id}"]`);
-        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      const id = c.getAttribute('data-solutions-card');
+      const section = wrapper.querySelector(`[data-solutions-content="${id}"]`) || document.querySelector(`[data-solutions-content="${id}"]`);
+      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
       if (mode === 'autoplay') pauseAutoplay();
     }, { passive: true });
 
@@ -84,6 +147,25 @@ export function initSolutionCards() {
       }
     });
   });
+
+  // hub control: advance step-by-step when center/hub is clicked
+  const hub = wrapper.querySelector('[data-solutions-hub]') || wrapper.querySelector('.solution-cards-circle-center');
+  if (hub) {
+    hub.addEventListener('click', (e) => {
+      e.preventDefault();
+      const next = (currentIndex + 1) % cards.length;
+      openCard(cards[next]);
+      // animate svg on the newly active card (if present)
+      animateSvgScale(cards[next]);
+      if (mode === 'autoplay') pauseAutoplay();
+    }, { passive: true });
+    hub.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        hub.click();
+      }
+    });
+  }
 
   if (mode === 'scroll' || mode === 'svg') {
     console.log('[solutions] scroll observer enabled for mode:', mode);
@@ -110,87 +192,17 @@ export function initSolutionCards() {
 
   } else if (mode === 'autoplay') {
     console.log('[solutions] autoplay mode');
-    let i = 0;
+    // use currentIndex so clicks/hub stay in sync
     (function next(){
       if (!userPaused) {
-        openCard(cards[i]);
-        i = (i + 1) % cards.length;
+        openCard(cards[currentIndex]);
+        currentIndex = (currentIndex + 1) % cards.length;
       }
-      // keep ticking; when userPaused is true we still poll until it clears
       setTimeout(next, 5000);
     })();
   } else {
     console.log('[solutions] unknown mode:', mode);
   }
-
-  // --- SVG helpers -------------------------------------------------------
-  // detect inline svg in card
-  const isSvgCard = (card) => !!card.querySelector('svg');
-
-  // Cache original fills for elements inside an svg (first time only)
-  const cacheOriginalFills = (svg) => {
-    if (!svg || svg.__fillsCached) return;
-    const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
-    elems.forEach(el => {
-      // store current explicit fill or computed fill so we can restore later
-      if (el.hasAttribute('fill')) {
-        el.dataset.__origFill = el.getAttribute('fill') || '';
-      } else {
-        try {
-          const comp = getComputedStyle(el).fill || '';
-          el.dataset.__origFill = comp || '';
-        } catch (e) {
-          el.dataset.__origFill = '';
-        }
-      }
-    });
-    svg.__fillsCached = true;
-  };
-
-  // set fill to a CSS value (like 'var(--brand-red)') or null to restore original
-  const setSvgFill = (card, cssFillOrNull) => {
-    const svg = card.querySelector('svg');
-    if (!svg) return;
-    cacheOriginalFills(svg);
-    // smooth fill transition on the svg root so fills change nicely
-    svg.style.transition = 'fill 260ms ease, color 260ms ease';
-    const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
-    elems.forEach(el => {
-      if (cssFillOrNull) {
-        // apply CSS variable fill; use style so it overrides attributes
-        el.style.fill = cssFillOrNull;
-      } else {
-        // restore original explicit fill if existed, otherwise remove style
-        const orig = el.dataset.__origFill;
-        if (orig != null && orig !== '') {
-          el.style.fill = orig;
-        } else {
-          el.style.removeProperty('fill');
-        }
-      }
-    });
-  };
-
-  // small scale pulse animation for svg (uses WAAPI if available)
-  const animateSvgScale = (card) => {
-    const svg = card.querySelector('svg');
-    if (!svg) return;
-    try {
-      if (svg.animate) {
-        svg.animate([
-          { transform: 'scale(1)', offset: 0 },
-          { transform: 'scale(1.5)', offset: 0.5 },
-          { transform: 'scale(1)', offset: 1 }
-        ], { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' });
-        return;
-      }
-    } catch (e) { /* ignore */ }
-    // fallback quick css transform
-    svg.style.transition = 'transform 220ms ease';
-    svg.style.transform = 'scale(1.08)';
-    setTimeout(() => { svg.style.transform = 'scale(1)'; }, 220);
-  };
-  // -----------------------------------------------------------------------
 
   // If wrapper is in svg mode, ensure an initial card is activated now that helpers exist
   if (mode === 'svg') {
