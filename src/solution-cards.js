@@ -31,14 +31,20 @@ export function initSolutionCards() {
         : '0px';
     });
 
-    // SVG handling: animate scale and swap fills for the active card
-    // restore others, animate the newly active one
+    // SVG handling: only run when wrapper mode is "svg" OR when individual card has data-solutions-svg
+    const svgMode = mode === 'svg';
     cards.forEach(c => {
-      if (c === card) {
-        setSvgFill(c, 'var(--brand-red)');
-        animateSvgScale(c);
+      const perCardSvg = c.hasAttribute('data-solutions-svg');
+      if (svgMode || perCardSvg) {
+        if (c === card) {
+          setSvgFill(c, 'var(--brand-red)');
+          animateSvgScale(c);
+        } else {
+          setSvgFill(c, null); // restore original
+        }
       } else {
-        setSvgFill(c, null); // restore original
+        // ensure any previous inline changes are restored
+        setSvgFill(c, null);
       }
     });
   }
