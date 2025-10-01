@@ -9,11 +9,11 @@ export function initSolutionCards() {
   const wrapper = document.querySelector("[data-solutions]");
   if (!wrapper) return console.log("[solutions] no wrapper");
 
-  const mode = wrapper.getAttribute("data-solutions"); 
+  const mode = wrapper.getAttribute("data-solutions");
   const cards = [...wrapper.querySelectorAll("[data-solutions-card]")];
   if (!cards.length) return console.log("[solutions] no cards");
 
-  // Minimal openCard — replace with your full version if needed
+  // keep this minimal
   function openCard(card) {
     cards.forEach(c => {
       const on = c === card;
@@ -21,7 +21,7 @@ export function initSolutionCards() {
     });
   }
 
-  // Dispatch to mode-specific initializer
+  // Dispatch based on mode
   if (mode === "svg") {
     initSvgMode(wrapper, cards, openCard);
   } else if (mode === "scroll") {
