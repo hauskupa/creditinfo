@@ -35,8 +35,10 @@ export function initSolutionCards() {
   // Lottie & SVG handling helper: prefer Lottie if present, otherwise adjust inline SVG fill
   const getLottiePlayer = (card) => {
     if (!card) return null;
-    // common selectors: <lottie-player>, elements with .lottie class, or data-lottie attributes
-    const el = card.querySelector('lottie-player, [data-lottie-player], [data-lottie], .lottie');
+    // include Webflow's lottie wrappers (data-animation-type="lottie" / data-src) and common selectors
+    const el = card.querySelector(
+      'lottie-player, [data-lottie-player], [data-lottie], .lottie, [data-animation-type="lottie"], [data-src], [data-w-id]'
+    );
     return el || null;
   };
 
