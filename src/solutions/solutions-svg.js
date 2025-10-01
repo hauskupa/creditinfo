@@ -4,6 +4,11 @@ import { playLottie } from "./solutions-core.js";
 export function initSvgMode(wrapper, cards, openCard) {
   console.log("[solutions] svg mode");
 
+  // Force disable autoplay on svg-mode lotties
+  wrapper.querySelectorAll("[data-animation-type='lottie']").forEach(el => {
+    el.setAttribute("data-autoplay", "0");
+  });
+
   // Find all sections that drive the scroll sync
   let sections = [...wrapper.querySelectorAll("[data-solutions-content]")];
   if (!sections.length) sections = [...document.querySelectorAll("[data-solutions-content]")];

@@ -8,32 +8,25 @@ export function getLottiePlayer(card) {
   );
 }
 
-// Play or stop lottie, restart from frame 0 when playing
 export function playLottie(card, shouldPlay = true) {
-  const playerEl = getLottiePlayer(card);
+  const playerEl = card.querySelector("[data-animation-type='lottie']");
   if (!playerEl) return false;
 
-  // cached instance check
-  let inst = playerEl.__lottieInstance || playerEl.anim || playerEl.__wf_lottie;
+  // Webflow usually attaches the instance here
+  let inst = playerEl.__wf_lottie || playerEl.__lottieInstance || playerEl.anim;
 
-  // if no instance, try to load one
   if (!inst) {
     const bodymovin = window.bodymovin || window.lottie;
     const path = playerEl.dataset.src || playerEl.getAttribute("data-src");
     if (bodymovin && path) {
-      try {
-        inst = bodymovin.loadAnimation({
-          container: playerEl,
-          renderer: playerEl.dataset.renderer || "svg",
-          loop: playerEl.dataset.loop === "true" || playerEl.dataset.loop === "1",
-          autoplay: false,
-          path
-        });
-        playerEl.__lottieInstance = inst;
-      } catch (err) {
-        console.warn("[solutions] lottie load failed", err);
-        return false;
-      }
+      inst = bodymovin.loadAnimation({
+        container: playerEl,
+        renderer: "svg",
+        loop: playerEl.dataset.loop === "true" || playerEl.dataset.loop === "1",
+        autoplay: false,
+        path
+      });
+      playerEl.__lottieInstance = inst;
     }
   }
 
@@ -41,18 +34,15 @@ export function playLottie(card, shouldPlay = true) {
 
   try {
     if (shouldPlay) {
-      // always restart from 0
       if (typeof inst.goToAndPlay === "function") {
-        inst.goToAndPlay(0, true);
-      } else if (typeof inst.stop === "function" && typeof inst.play === "function") {
-        inst.stop();
-        inst.play();
+        inst.goToAndPlay(0, true); // restart from 0
       } else if (typeof inst.play === "function") {
+        inst.stop?.();
         inst.play();
       }
     } else {
-      if (typeof inst.stop === "function") inst.stop();
-      else if (typeof inst.pause === "function") inst.pause();
+      inst.stop?.();
+      inst.pause?.();
     }
     return true;
   } catch (e) {
