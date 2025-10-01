@@ -41,57 +41,65 @@ export function initSolutionCards() {
   };
 
   const playLottie = (card, shouldPlay = true) => {
-    const player = getLottiePlayer(card);
-    if (!player) return false;
-    try {
-      // lottie-player webcomponent (LottieFiles) supports play() / stop()
-      if (typeof player.play === 'function') {
-        if (shouldPlay) {
-          player.play();
-        } else if (typeof player.stop === 'function') {
-          player.stop();
-        } else if (typeof player.pause === 'function') {
-          player.pause();
-        }
-        return true;
-      }
-      // some integrations expose a bodymovin instance on the element
-      const inst = player.__lottie || player.lottieInstance || player._lottie;
-      if (inst) {
-        if (shouldPlay && typeof inst.play === 'function') inst.play();
-        else if (!shouldPlay && typeof inst.stop === 'function') inst.stop();
-        else if (!shouldPlay && typeof inst.pause === 'function') inst.pause();
-        return true;
-      }
-      // fallback: try generic methods on the element
-      if (shouldPlay && typeof player.play === 'function') { player.play(); return true; }
-      if (!shouldPlay && typeof player.pause === 'function') { player.pause(); return true; }
-    } catch (e) {
-      // ignore errors and let SVG handling apply
-    }
-    return false;
-  };
+    const playerEl = getLottiePlayer(card);
+    if (!playerEl) return false;
 
-  const setSvgFill = (card, cssFillOrNull) => {
-    // if a Lottie player exists, do not manipulate SVG fills here
-    const played = playLottie(card, !!cssFillOrNull);
-    if (played) return;
-    const svg = card?.querySelector('svg');
-    if (!svg) return;
-    cacheOriginalFills(svg);
-    svg.style.transition = 'fill 260ms ease, color 260ms ease';
-    const elems = svg.querySelectorAll('path, circle, rect, polygon, g, ellipse, polyline');
-    elems.forEach(el => {
-      if (cssFillOrNull) {
-        el.style.fill = cssFillOrNull;
-      } else {
-        const orig = el.dataset.__origFill;
-        if (orig != null && orig !== '') el.style.fill = orig;
-        else el.style.removeProperty('fill');
+    // try common stored instance locations
+    let inst = playerEl.__lottieInstance || playerEl.__lottie || playerEl.lottieInstance || playerEl._lottie || playerEl.anim || playerEl.__wf_lottie;
+
+    // if no instance, try to (re)create one via bodymovin/window.lottie if path is available
+    if (!inst) {
+      const bodymovin = window.bodymovin || window.lottie || window.lottieJS;
+      const path = playerEl.dataset.src || playerEl.getAttribute('data-src') || playerEl.getAttribute('data-animation');
+      if (bodymovin && path && typeof bodymovin.loadAnimation === 'function') {
+        try {
+          inst = bodymovin.loadAnimation({
+            container: playerEl,
+            renderer: playerEl.dataset.renderer || 'svg',
+            loop: (playerEl.dataset.loop === '1' || playerEl.dataset.loop === 'true'),
+            autoplay: false, // create paused — we'll control playback
+            path
+          });
+          // cache on element to avoid re-creating
+          playerEl.__lottieInstance = inst;
+        } catch (err) {
+          // ignore and fall back
+          return false;
+        }
       }
-    });
+    }
+
+    if (!inst) {
+      // last-ditch: maybe the element itself is a webcomponent with play/stop
+      try {
+        if (shouldPlay && typeof playerEl.play === 'function') { playerEl.play(); return true; }
+        if (!shouldPlay && typeof playerEl.pause === 'function') { playerEl.pause(); return true; }
+      } catch (e) { return false; }
+      return false;
+    }
+
+    // control known instance APIs
+    try {
+      if (shouldPlay) {
+        // prefer goToAndPlay(0) to restart reliably, fallback to play()
+        if (typeof inst.goToAndPlay === 'function') inst.goToAndPlay(0, true);
+        else if (typeof inst.stop === 'function') { inst.stop(); if (typeof inst.play === 'function') inst.play(); }
+        else if (typeof inst.play === 'function') inst.play();
+      } else {
+        if (typeof inst.stop === 'function') inst.stop();
+        else if (typeof inst.pause === 'function') inst.pause();
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
-  // ---------------------------------------------------------------------
+  // ensure any lotties that autoplayed on load are paused so they only play on activation
+  // run on next frame so any webflow init that created instances has run
+  requestAnimationFrame(() => {
+    cards.forEach(c => { try { playLottie(c, false); } catch (e) { /* ignore */ } });
+  });
+ // ---------------------------------------------------------------------
 
   // normalize clips
   cards.forEach(c => {
