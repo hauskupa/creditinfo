@@ -1,41 +1,47 @@
 // solutions-core.js
 
-// Find possible lottie element
-export function getLottiePlayer(card) {
-  if (!card) return null;
-  return card.querySelector(
-    "lottie-player, [data-lottie-player], [data-lottie], .lottie, [data-animation-type='lottie'], [data-src], [data-w-id]"
-  );
+// Always (re)create a bodymovin instance from data-src
+function ensureInstance(el) {
+  const path = el.dataset.src || el.getAttribute("data-src");
+  if (!path) return null;
+
+  // cache so we don't reload every scroll
+  if (el.__lottieInstance) return el.__lottieInstance;
+
+  const bodymovin = window.bodymovin || window.lottie;
+  if (!bodymovin || typeof bodymovin.loadAnimation !== "function") {
+    console.warn("[solutions] bodymovin not available");
+    return null;
+  }
+
+  try {
+    const inst = bodymovin.loadAnimation({
+      container: el,
+      renderer: el.dataset.renderer || "svg",
+      loop: el.dataset.loop === "true" || el.dataset.loop === "1",
+      autoplay: false,
+      path
+    });
+    el.__lottieInstance = inst;
+    return inst;
+  } catch (err) {
+    console.warn("[solutions] lottie load failed", err);
+    return null;
+  }
 }
 
+// play/stop a card’s lottie, always from frame 0
 export function playLottie(card, shouldPlay = true) {
   const playerEl = card.querySelector("[data-animation-type='lottie']");
   if (!playerEl) return false;
 
-  // Webflow usually attaches the instance here
-  let inst = playerEl.__wf_lottie || playerEl.__lottieInstance || playerEl.anim;
-
-  if (!inst) {
-    const bodymovin = window.bodymovin || window.lottie;
-    const path = playerEl.dataset.src || playerEl.getAttribute("data-src");
-    if (bodymovin && path) {
-      inst = bodymovin.loadAnimation({
-        container: playerEl,
-        renderer: "svg",
-        loop: playerEl.dataset.loop === "true" || playerEl.dataset.loop === "1",
-        autoplay: false,
-        path
-      });
-      playerEl.__lottieInstance = inst;
-    }
-  }
-
+  const inst = ensureInstance(playerEl);
   if (!inst) return false;
 
   try {
     if (shouldPlay) {
       if (typeof inst.goToAndPlay === "function") {
-        inst.goToAndPlay(0, true); // restart from 0
+        inst.goToAndPlay(0, true); // restart from beginning
       } else if (typeof inst.play === "function") {
         inst.stop?.();
         inst.play();
