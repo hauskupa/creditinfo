@@ -123,16 +123,22 @@ export function initSolutionCards() {
     const svgMode = mode === 'svg';
     cards.forEach(c => {
       const perCardSvg = c.hasAttribute('data-solutions-svg');
+      const hasLottie = !!getLottiePlayer(c);
+
       if (svgMode || perCardSvg) {
-        if (c === card) {
-          // set svg fill to brand color for active card
-          setSvgFill(c, 'var(--brand-red)');
+        if (hasLottie) {
+          // prefer controlling Lottie player if present
+          if (c === card) playLottie(c, true);
+          else playLottie(c, false);
         } else {
-          setSvgFill(c, null); // restore original
+          // fallback to SVG fill behavior
+          if (c === card) setSvgFill(c, 'var(--brand-red)');
+          else setSvgFill(c, null);
         }
       } else {
-        // ensure any previous inline changes are restored
-        setSvgFill(c, null);
+        // not in svg mode: ensure any Lottie is stopped and SVGs restored
+        if (hasLottie) playLottie(c, false);
+        else setSvgFill(c, null);
       }
     });
   }
