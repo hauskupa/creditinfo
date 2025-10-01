@@ -1,6 +1,5 @@
-// solutions-autoplay.js
 export function initAutoplayMode(cards, openCard) {
-  console.log('[solutions] autoplay mode');
+  console.log("[solutions] autoplay mode");
   let currentIndex = 0;
   let userPaused = false;
 

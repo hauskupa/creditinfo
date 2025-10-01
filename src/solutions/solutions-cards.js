@@ -3,7 +3,6 @@ import { initSvgMode } from "./solutions-svg.js";
 import { initScrollMode } from "./solutions-scroll.js";
 import { initAutoplayMode } from "./solutions-autoplay.js";
 
-// This is the function main.js calls
 export function initSolutionCards() {
   console.log("[solutions] init");
 
@@ -14,7 +13,7 @@ export function initSolutionCards() {
   const cards = [...wrapper.querySelectorAll("[data-solutions-card]")];
   if (!cards.length) return console.log("[solutions] no cards");
 
-  // Simplified openCard – you can move your full version here or import helpers from core
+  // Minimal openCard — replace with your full version if needed
   function openCard(card) {
     cards.forEach(c => {
       const on = c === card;
