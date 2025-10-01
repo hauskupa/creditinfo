@@ -32,7 +32,50 @@ export function initSolutionCards() {
   };
 
   // set fill to a CSS value (like 'var(--brand-red)') or null to restore original
+  // Lottie & SVG handling helper: prefer Lottie if present, otherwise adjust inline SVG fill
+  const getLottiePlayer = (card) => {
+    if (!card) return null;
+    // common selectors: <lottie-player>, elements with .lottie class, or data-lottie attributes
+    const el = card.querySelector('lottie-player, [data-lottie-player], [data-lottie], .lottie');
+    return el || null;
+  };
+
+  const playLottie = (card, shouldPlay = true) => {
+    const player = getLottiePlayer(card);
+    if (!player) return false;
+    try {
+      // lottie-player webcomponent (LottieFiles) supports play() / stop()
+      if (typeof player.play === 'function') {
+        if (shouldPlay) {
+          player.play();
+        } else if (typeof player.stop === 'function') {
+          player.stop();
+        } else if (typeof player.pause === 'function') {
+          player.pause();
+        }
+        return true;
+      }
+      // some integrations expose a bodymovin instance on the element
+      const inst = player.__lottie || player.lottieInstance || player._lottie;
+      if (inst) {
+        if (shouldPlay && typeof inst.play === 'function') inst.play();
+        else if (!shouldPlay && typeof inst.stop === 'function') inst.stop();
+        else if (!shouldPlay && typeof inst.pause === 'function') inst.pause();
+        return true;
+      }
+      // fallback: try generic methods on the element
+      if (shouldPlay && typeof player.play === 'function') { player.play(); return true; }
+      if (!shouldPlay && typeof player.pause === 'function') { player.pause(); return true; }
+    } catch (e) {
+      // ignore errors and let SVG handling apply
+    }
+    return false;
+  };
+
   const setSvgFill = (card, cssFillOrNull) => {
+    // if a Lottie player exists, do not manipulate SVG fills here
+    const played = playLottie(card, !!cssFillOrNull);
+    if (played) return;
     const svg = card?.querySelector('svg');
     if (!svg) return;
     cacheOriginalFills(svg);
@@ -47,25 +90,6 @@ export function initSolutionCards() {
         else el.style.removeProperty('fill');
       }
     });
-  };
-
-  // small svg pulse animation (used by hub step or card activation)
-  const animateSvgScale = (card) => {
-    const svg = card?.querySelector('svg');
-    if (!svg) return;
-    try {
-      if (svg.animate) {
-        svg.animate([
-          { transform: 'scale(1)', offset: 0 },
-          { transform: 'scale(1.08)', offset: 0.5 },
-          { transform: 'scale(1)', offset: 1 }
-        ], { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' });
-        return;
-      }
-    } catch (e) { /* ignore */ }
-    svg.style.transition = 'transform 220ms ease';
-    svg.style.transform = 'scale(1.08)';
-    setTimeout(() => { svg.style.transform = 'scale(1)'; }, 220);
   };
   // ---------------------------------------------------------------------
 
