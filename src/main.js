@@ -1,7 +1,7 @@
 console.log("test-2025-09-24 from src/main.js");
 import initSubnav from "./subnav.js";
 import initTopnav from "./topnav.js";
-import { initSolutionCards } from "./solution-cards.js";
+import { initSolutionCards } from "./solutions/solutions-cards.js";
 import { initFilter } from "./filter.js";
 import { initStaffCards } from "./staff-cards.js";
 import { initSlider, initParallax } from "./slider.js";
