@@ -1,24 +1,25 @@
-function openCard(card) {
-  cards.forEach(c => {
-    const isActive = c === card;
-    c.classList.toggle("is-active", isActive);
+// src/solutions/solutions-autoplay.js
+export function initAutoplayMode(cards, openCard) {
+  console.log("[solutions] autoplay mode");
 
-    // play/stop its Lottie
-    playLottie(c, isActive);
+  let currentIndex = 0;
+  let timer;
 
-    // handle card-text-clip
-    const clip = c.querySelector(".card-text-clip");
-    if (clip) {
-      clip.style.overflow = "hidden";
-      clip.style.transition = "max-height 400ms ease";
+  function next() {
+    // activate card
+    openCard(cards[currentIndex]);
 
-      if (isActive) {
-        // expand to content height
-        clip.style.maxHeight = (clip.firstElementChild?.scrollHeight || 0) + "px";
-      } else {
-        // collapse
-        clip.style.maxHeight = "0px";
-      }
-    }
-  });
+    // move to next
+    currentIndex = (currentIndex + 1) % cards.length;
+
+    // repeat after 5s
+    timer = setTimeout(next, 5000);
+  }
+
+  if (cards.length) {
+    next(); // kick off autoplay
+  }
+
+  // optional return — gives us a way to stop autoplay later if needed
+  return () => clearTimeout(timer);
 }
