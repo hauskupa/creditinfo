@@ -3,10 +3,7 @@ import lottie from "lottie-web";
 
 const lottieCache = new Map();
 
-export function getLottiePlayer(card) {
-  const container = card.querySelector("[data-lottie]");
-  if (!container) return null;
-
+export function getLottiePlayer(container, { forceOnce = false } = {}) {
   if (lottieCache.has(container)) {
     return lottieCache.get(container);
   }
@@ -15,7 +12,7 @@ export function getLottiePlayer(card) {
   const anim = lottie.loadAnimation({
     container,
     renderer: "svg",
-    loop: false,
+    loop: forceOnce ? false : (container.dataset.loop === "true" || container.dataset.loop === "1"),
     autoplay: false,
     path: src
   });
@@ -24,12 +21,16 @@ export function getLottiePlayer(card) {
   return anim;
 }
 
-export function playLottie(card, play = true) {
-  const anim = getLottiePlayer(card);
+export function playLottie(el, play = true, { forceOnce = false } = {}) {
+  // el can be card or hub wrapper
+  const container = el.querySelector("[data-lottie]") || el;
+  if (!container) return;
+
+  const anim = getLottiePlayer(container, { forceOnce });
   if (!anim) return;
 
   if (play) {
-    anim.stop();        // always restart from beginning
+    anim.stop();
     anim.play();
   } else {
     anim.stop();

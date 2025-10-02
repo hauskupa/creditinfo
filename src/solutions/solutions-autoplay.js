@@ -1,11 +1,24 @@
-export function initAutoplayMode(cards, openCard) {
-  console.log("[solutions] autoplay mode");
+function openCard(card) {
+  cards.forEach(c => {
+    const isActive = c === card;
+    c.classList.toggle("is-active", isActive);
 
-  let currentIndex = 0;
+    // play/stop its Lottie
+    playLottie(c, isActive);
 
-  (function next() {
-    openCard(cards[currentIndex]);
-    currentIndex = (currentIndex + 1) % cards.length;
-    setTimeout(next, 5000);
-  })();
+    // handle card-text-clip
+    const clip = c.querySelector(".card-text-clip");
+    if (clip) {
+      clip.style.overflow = "hidden";
+      clip.style.transition = "max-height 400ms ease";
+
+      if (isActive) {
+        // expand to content height
+        clip.style.maxHeight = (clip.firstElementChild?.scrollHeight || 0) + "px";
+      } else {
+        // collapse
+        clip.style.maxHeight = "0px";
+      }
+    }
+  });
 }
