@@ -1,7 +1,7 @@
 import { initSvgMode } from "./solutions-svg.js";
 import { initScrollMode } from "./solutions-scroll.js";
 import { initAutoplayMode } from "./solutions-autoplay.js";
-import { playLottie, disableAutoplay } from "./solutions-core.js";
+import { playLottie } from "./solutions-core.js";
 
 export function initSolutionCards() {
   console.log("[solutions] init cards bootstrap");
@@ -9,13 +9,9 @@ export function initSolutionCards() {
   const wrapper = document.querySelector("[data-solutions]");
   if (!wrapper) return console.log("[solutions] no wrapper");
 
-  // Kill autoplay on all Lotties
-  disableAutoplay(wrapper);
-
   const mode = wrapper.getAttribute("data-solutions");
   const cards = [...wrapper.querySelectorAll("[data-solutions-card]")];
   if (!cards.length) return console.log("[solutions] no cards");
-
   console.log("[solutions] mode:", mode, "cards found:", cards.length);
 
   function openCard(card) {
@@ -35,7 +31,4 @@ export function initSolutionCards() {
   } else {
     console.log("[solutions] unknown mode:", mode);
   }
-
-  // ensure first card is active at boot
-  if (cards[0]) openCard(cards[0]);
 }

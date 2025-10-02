@@ -1,27 +1,37 @@
 // solutions-core.js
+import lottie from "lottie-web";
 
-export function disableAutoplay(wrapper) {
-  wrapper.querySelectorAll("[data-animation-type='lottie']").forEach(el => {
-    el.setAttribute("data-autoplay", "0");
+const lottieCache = new Map();
+
+export function getLottiePlayer(card) {
+  const container = card.querySelector("[data-lottie]");
+  if (!container) return null;
+
+  if (lottieCache.has(container)) {
+    return lottieCache.get(container);
+  }
+
+  const src = container.getAttribute("data-lottie");
+  const anim = lottie.loadAnimation({
+    container,
+    renderer: "svg",
+    loop: false,
+    autoplay: false,
+    path: src
   });
+
+  lottieCache.set(container, anim);
+  return anim;
 }
 
 export function playLottie(card, play = true) {
-  const lottieEl = card.querySelector("[data-animation-type='lottie']");
-  if (!lottieEl) return;
+  const anim = getLottiePlayer(card);
+  if (!anim) return;
 
   if (play) {
-    // show the element
-    lottieEl.style.display = "block";
-
-    // restart the Lottie by "resetting" Webflow IX2
-    try {
-      lottieEl.dispatchEvent(new CustomEvent("IX2_PAGE_UPDATE"));
-    } catch (e) {
-      console.log("[solutions] could not restart lottie", e);
-    }
+    anim.stop();        // always restart from beginning
+    anim.play();
   } else {
-    // hide when not active
-    lottieEl.style.display = "none";
+    anim.stop();
   }
 }
