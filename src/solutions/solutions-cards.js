@@ -5,15 +5,15 @@ import { initAutoplayMode } from "./solutions-autoplay.js";
 import { playLottie } from "./solutions-core.js";
 
 export function initSolutionCards() {
-  console.log("[solutions] init");
+   console.log("[solutions] init cards bootstrap");
 
   const wrapper = document.querySelector("[data-solutions]");
-  if (!wrapper) return console.log("[solutions] no wrapper");
+   if (!wrapper) return console.log("[solutions] no wrapper");
 
   const mode = wrapper.getAttribute("data-solutions");
   const cards = [...wrapper.querySelectorAll("[data-solutions-card]")];
   if (!cards.length) return console.log("[solutions] no cards");
-
+   console.log("[solutions] mode:", mode, "cards found:", cards.length);
   // unified card activator
   function openCard(card) {
     cards.forEach(c => {
