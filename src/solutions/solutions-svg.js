@@ -1,11 +1,7 @@
-// solutions-svg.js
-import { playLottie } from "./solutions-core.js"; 
+import { playLottie } from "./solutions-core.js";
+
 export function initSvgMode(wrapper, cards, openCard) {
   console.log("[solutions] svg mode");
-
-  wrapper.querySelectorAll("[data-animation-type='lottie']").forEach(el => {
-    el.setAttribute("data-autoplay", "0");
-  });
 
   let sections = [...wrapper.querySelectorAll("[data-solutions-content]")];
   if (!sections.length) sections = [...document.querySelectorAll("[data-solutions-content]")];
@@ -17,13 +13,24 @@ export function initSvgMode(wrapper, cards, openCard) {
       .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
 
     if (!visible) return;
-
     const id = visible.target.getAttribute("data-solutions-content");
     const match = cards.find(c => c.getAttribute("data-solutions-card") === id);
-    if (match) openCard(match);
+
+    if (match) {
+      openCard(match);
+
+      // play matching lottie, stop others
+      cards.forEach(c => {
+        if (c === match) playLottie(c, true);
+        else playLottie(c, false);
+      });
+    }
   }, { rootMargin: "-30% 0px -60% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] });
 
   sections.forEach(s => io.observe(s));
 
-  if (cards[0]) openCard(cards[0]);
+  if (cards[0]) {
+    openCard(cards[0]);
+    playLottie(cards[0], true);
+  }
 }
