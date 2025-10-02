@@ -1,6 +1,4 @@
 // solutions-autoplay.js
-import { openCard } from "./solutions-core.js";
-
 export function initAutoplayMode(cards) {
   console.log("[solutions] autoplay mode");
 

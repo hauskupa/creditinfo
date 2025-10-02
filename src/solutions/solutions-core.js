@@ -1,35 +1,14 @@
 // solutions-core.js
+export function playLottie(card, play = true) {
+  const lottieEl = card.querySelector("[data-animation-type='lottie']");
+  if (!lottieEl) return;
 
-// Helper to find a Lottie element inside a card
-export function getLottieEl(card) {
-  if (!card) return null;
-  return card.querySelector("[data-animation-type='lottie']");
-}
+  // Access Webflow's built-in Lottie engine
+  const lottieEngine = Webflow.require("lottie");
 
-// Play or stop an existing Webflow Lottie animation
-export function playLottie(el, shouldPlay) {
-  if (!el) return;
-
-  // Webflow stores its animation instance here
-  const anim = el.__lottie;
-  if (!anim) return;
-
-  if (shouldPlay) {
-    anim.play();
+  if (play) {
+    lottieEngine.play(lottieEl);
   } else {
-    anim.stop();
+    lottieEngine.stop(lottieEl);
   }
-}
-
-// Toggle active card state
-export function openCard(cards, card) {
-  cards.forEach(c => {
-    const isActive = c === card;
-    c.classList.toggle("is-active", isActive);
-
-    const lottieEl = getLottieEl(c);
-    if (lottieEl) {
-      playLottie(lottieEl, isActive);
-    }
-  });
 }

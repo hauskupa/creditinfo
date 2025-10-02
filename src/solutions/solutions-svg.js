@@ -1,6 +1,4 @@
 // solutions-svg.js
-import { openCard } from "./solutions-core.js";
-
 export function initSvgMode(wrapper, cards) {
   console.log("[solutions] svg mode");
 

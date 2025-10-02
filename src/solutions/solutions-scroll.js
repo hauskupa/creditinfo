@@ -1,5 +1,4 @@
 // solutions-scroll.js
-import { openCard } from "./solutions-core.js";
 
 export function initScrollMode(wrapper, cards) {
   console.log("[solutions] scroll observer enabled");
