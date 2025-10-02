@@ -1,58 +1,35 @@
 // solutions-core.js
 
-// Always (re)create a bodymovin instance from data-src
-function ensureInstance(el) {
-  const path = el.dataset.src || el.getAttribute("data-src");
-  if (!path) return null;
+// Helper to find a Lottie element inside a card
+export function getLottieEl(card) {
+  if (!card) return null;
+  return card.querySelector("[data-animation-type='lottie']");
+}
 
-  // cache so we don't reload every scroll
-  if (el.__lottieInstance) return el.__lottieInstance;
+// Play or stop an existing Webflow Lottie animation
+export function playLottie(el, shouldPlay) {
+  if (!el) return;
 
-  const bodymovin = window.bodymovin || window.lottie;
-  if (!bodymovin || typeof bodymovin.loadAnimation !== "function") {
-    console.warn("[solutions] bodymovin not available");
-    return null;
-  }
+  // Webflow stores its animation instance here
+  const anim = el.__lottie;
+  if (!anim) return;
 
-  try {
-    const inst = bodymovin.loadAnimation({
-      container: el,
-      renderer: el.dataset.renderer || "svg",
-      loop: el.dataset.loop === "true" || el.dataset.loop === "1",
-      autoplay: false,
-      path
-    });
-    el.__lottieInstance = inst;
-    return inst;
-  } catch (err) {
-    console.warn("[solutions] lottie load failed", err);
-    return null;
+  if (shouldPlay) {
+    anim.play();
+  } else {
+    anim.stop();
   }
 }
 
-// play/stop a card’s lottie, always from frame 0
-export function playLottie(card, shouldPlay = true) {
-  const playerEl = card.querySelector("[data-animation-type='lottie']");
-  if (!playerEl) return false;
+// Toggle active card state
+export function openCard(cards, card) {
+  cards.forEach(c => {
+    const isActive = c === card;
+    c.classList.toggle("is-active", isActive);
 
-  const inst = ensureInstance(playerEl);
-  if (!inst) return false;
-
-  try {
-    if (shouldPlay) {
-      if (typeof inst.goToAndPlay === "function") {
-        inst.goToAndPlay(0, true); // restart from beginning
-      } else if (typeof inst.play === "function") {
-        inst.stop?.();
-        inst.play();
-      }
-    } else {
-      inst.stop?.();
-      inst.pause?.();
+    const lottieEl = getLottieEl(c);
+    if (lottieEl) {
+      playLottie(lottieEl, isActive);
     }
-    return true;
-  } catch (e) {
-    console.warn("[solutions] lottie control error", e);
-    return false;
-  }
+  });
 }

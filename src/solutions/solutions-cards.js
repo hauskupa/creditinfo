@@ -13,21 +13,13 @@ export function initSolutionCards() {
   const cards = [...wrapper.querySelectorAll("[data-solutions-card]")];
   if (!cards.length) return console.log("[solutions] no cards");
 
-  // keep this minimal
-  function openCard(card) {
-    cards.forEach(c => {
-      const on = c === card;
-      c.classList.toggle("is-active", on);
-    });
-  }
-
   // Dispatch based on mode
   if (mode === "svg") {
-    initSvgMode(wrapper, cards, openCard);
+    initSvgMode(wrapper, cards);
   } else if (mode === "scroll") {
-    initScrollMode(wrapper, cards, openCard);
+    initScrollMode(wrapper, cards);
   } else if (mode === "autoplay") {
-    initAutoplayMode(cards, openCard);
+    initAutoplayMode(cards);
   } else {
     console.log("[solutions] unknown mode:", mode);
   }
