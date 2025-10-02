@@ -3,14 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-  "build": "node build.js",
-  "dev": "npx esbuild src/main.js --bundle --format=iife --target=es2019 --sourcemap --outfile=dist/main.dev.js --watch",
-  "deploy": "npm run build && git add src dist && git diff --cached --quiet || git commit -m \"Auto deploy $(date +'%Y-%m-%d %H:%M:%S')\" && git push origin main && bash ./purge.sh",
-  "build:purge": "npm run build && bash ./purge.sh",
-  "purge": "bash ./purge.sh"
-},
-
+    "build": "node build.js",
+    "dev": "npx esbuild src/main.js --bundle --format=iife --target=es2019 --sourcemap --outfile=dist/main.dev.js --watch",
+    "deploy": "npm run build && git add src dist && git diff --cached --quiet || git commit -m \"Auto deploy $(date +'%Y-%m-%d %H:%M:%S')\" && git push origin main && bash ./purge.sh",
+    "build:purge": "npm run build && bash ./purge.sh",
+    "purge": "bash ./purge.sh"
+  },
   "devDependencies": {
     "esbuild": "^0.25.9"
+  },
+  "dependencies": {
+    "lottie-web": "^5.13.0"
   }
 }
