@@ -10,7 +10,13 @@ export function initSolutionCards() {
   if (!wrapper) return console.log("[solutions] no wrapper");
 
   const mode = wrapper.getAttribute("data-solutions");
-  const cards = [...wrapper.querySelectorAll("[data-solutions-card]")];
+  const cards = [...wrapper.querySelectorAll("[data-solutions-card]")]
+    .sort((a, b) => {
+      const av = parseInt(a.getAttribute("data-solutions-card"), 10);
+      const bv = parseInt(b.getAttribute("data-solutions-card"), 10);
+      return av - bv;
+    });
+
   if (!cards.length) return console.log("[solutions] no cards");
 
   function openCard(card) {
@@ -21,14 +27,17 @@ export function initSolutionCards() {
       // play/stop its Lottie
       playLottie(c, isActive);
 
-      // handle card-text-clip
+      // handle card-text-clip with hybrid CSS transition
       const clip = c.querySelector(".card-text-clip");
       if (clip) {
-        clip.style.overflow = "hidden";
-        clip.style.transition = "max-height 400ms ease";
-        clip.style.maxHeight = isActive
-          ? (clip.firstElementChild?.scrollHeight || 0) + "px"
-          : "0px";
+        if (isActive) {
+          const h = clip.firstElementChild?.scrollHeight || 0;
+          clip.style.maxHeight = h + "px";
+          clip.classList.add("is-open");
+        } else {
+          clip.style.maxHeight = "0px";
+          clip.classList.remove("is-open");
+        }
       }
     });
 
