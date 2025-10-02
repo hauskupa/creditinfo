@@ -1,5 +1,5 @@
 // solutions-autoplay.js
-export function initAutoplayMode(cards) {
+export function initAutoplayMode(cards, openCard) {
   console.log("[solutions] autoplay mode");
 
   let currentIndex = 0;
@@ -7,9 +7,9 @@ export function initAutoplayMode(cards) {
 
   (function next() {
     if (!userPaused && cards.length) {
-      openCard(cards, cards[currentIndex]);
+      openCard(cards[currentIndex]);
       currentIndex = (currentIndex + 1) % cards.length;
     }
-    setTimeout(next, 5000); // 5s per card
+    setTimeout(next, 5000);
   })();
 }

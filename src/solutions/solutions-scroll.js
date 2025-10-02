@@ -1,6 +1,5 @@
 // solutions-scroll.js
-
-export function initScrollMode(wrapper, cards) {
+export function initScrollMode(wrapper, cards, openCard) {
   console.log("[solutions] scroll observer enabled");
 
   let sections = [...wrapper.querySelectorAll("[data-solutions-content]")];
@@ -15,10 +14,10 @@ export function initScrollMode(wrapper, cards) {
 
     const id = visible.target.getAttribute("data-solutions-content");
     const match = cards.find(c => c.getAttribute("data-solutions-card") === id);
-    if (match) openCard(cards, match);
+    if (match) openCard(match);
   }, { rootMargin: "-30% 0px -60% 0px", threshold: [0, .25, .5, .75, 1] });
 
   sections.forEach(s => io.observe(s));
-
-  if (cards[0]) openCard(cards, cards[0]); // First active
+  if (cards[0]) openCard(cards[0]);
 }
+c
