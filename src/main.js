@@ -5,6 +5,7 @@ import { initSolutionCards } from "./solutions/solutions-cards.js";
 import { initFilter } from "./filter.js";
 import { initStaffCards } from "./staff-cards.js";
 import { initSlider, initParallax } from "./slider.js";
+import { initStandaloneLottieAutoplay } from "./lottie-autoplay.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   initTopnav();
@@ -14,4 +15,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initStaffCards();
   initSlider();    // initialize slider
   initParallax();  // optional: initialize parallax (safe if already auto-inited)
+  initStandaloneLottieAutoplay();
 });
