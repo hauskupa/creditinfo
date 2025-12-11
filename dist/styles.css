@@ -123,3 +123,28 @@ body::-webkit-scrollbar{width:6px}
 
 /* each step snaps; your lines can stay as-is */
 [data-timeline-step]{ scroll-snap-align: center; }
+  a [data-tf-popup] {
+    font-family: inherit !important;
+    height: var(--_sizes---38px)!important;
+    border-top-left-radius: var(--_sizes---40px)!important;
+    border-top-right-radius: var(--_sizes---40px)!important;
+    border-bottom-left-radius: var(--_sizes---40px)!important;
+    border-bottom-right-radius: var(--_sizes---40px)!important;
+    background-color: transparent!important;
+    background:transparent!important;
+    color: #fff!important;
+    font-size: var(--_sizes---1-25-rem)!important;
+    line-height: var(--_sizes---1-rem)!important;
+    text-align: center!important;
+    cursor: pointer!important;
+    -webkit-user-select: none!important;
+    user-select: none!important;
+    justify-content: center!important;
+    align-items: center!important;
+    padding:inherit!important;
+    font-weight: 600!important;
+    transition-property: all,color,background-color!important;
+    transition-duration: .4s,.5s,.4s!important;
+    transition-timing-function: ease,ease,ease-in-out!important;
+    display: flex!important;
+}
